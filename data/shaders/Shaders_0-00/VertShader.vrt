@@ -1,0 +1,25 @@
+#version 460 core
+
+layout(location = 0) in vec3 attrib_vertex_Pos;
+layout(location = 1) in vec3 attrib_vertex_Nrm;
+layout(location = 2) in vec2 attrib_vertex_Tex;
+
+// Блок uniform-буфера для проекции и вида (привязан к binding=0)
+layout(std140, binding = 0) uniform SpaceMatrix {
+    mat4 worldSpaceMatrices;
+};
+layout(std430, binding = 8) buffer CompMatrixBuffer {
+    mat4 modelCompMatrices[];
+};
+out vec2 TexCoord;	// Передаем текстурные координаты дальше
+out float diff;    	// Передаем нормаль дальше
+
+void main() {
+	int MatrixIndex = gl_InstanceID + gl_BaseInstance;
+	
+    vec3 Normales = mat3(transpose(inverse(modelCompMatrices[MatrixIndex]))) * attrib_vertex_Nrm; // Учитываем матрицу модели
+	diff = max( dot(Normales, vec3(0.5773502,0.5773502,0.5773502) ), 0.185);
+	TexCoord = attrib_vertex_Tex;
+	
+    gl_Position = worldSpaceMatrices * modelCompMatrices[MatrixIndex] * vec4(attrib_vertex_Pos, 1.0);
+}

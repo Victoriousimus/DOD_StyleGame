@@ -124,10 +124,6 @@ namespace lgc {
 struct {
 	img::CStbImg img;
 	lgc::IWorld* wrl;
-	u_4b Win_W;
-	u_4b Win_H;
-	u_4b Image_size;
-	u_2b Population;
 	void Init() {
 		wrl = new lgc::classes::CWorld();
 	}
@@ -152,8 +148,6 @@ __forceinline void emg::logics::Init() {
 		Enty_DRW[i].txtr_id = 1;
 		Enty_DRW[i].anim_id = -1;
 		Enty_DRW[i].inst_id = -1;
-		Enty_DRW[i].ID_Material = 0;
-		Enty_DRW[i].ID_Instance = 0;
 
 	}
 	Enty_Curs.Attach(&Enty_List);

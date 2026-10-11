@@ -1,0 +1,21 @@
+#SHADERS:
+	cmp:= data/shaders/Shaders_0-01/CompShader.cmp*
+	vrt:= data/shaders/Shaders_0-01/VertShader.vrt*
+	frg:= data/shaders/Shaders_0-01/FragShader.frg*
+
+#MODELS:
+	#TEXTUR_FILES:
+		atl:= data/world/world_map.png*
+		#MESH_FILES:
+			msh:= data/models/meshes/grid.vtn*
+	#TEXTUR_FILES:
+		atl:= data/models/textures/atlas.png*
+		#MESH_FILES:
+			msh:= data/models/meshes/hmap.vtn*
+			msh:= data/models/meshes/vert.vtn*
+			msh:= data/models/meshes/cube.vtn*
+			msh:= data/models/meshes/caty.vtn*
+			msh:= data/models/meshes/foxy.vtn*
+
+#WORLDS:
+	map:= data/world/world_map.png*

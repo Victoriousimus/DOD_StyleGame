@@ -1,0 +1,39 @@
+#version 460 core
+
+layout(local_size_x = 128) in; // Работает с группами по N потоков
+
+struct TransformData {
+    float rotX;
+    float rotY;
+    float rotZ;
+    float posX;
+    float posY;
+    float posZ;
+    float tex_atlas_X;
+    float tex_atlas_Y;
+};
+
+layout(std430, binding = 1) buffer TransformInputBuffer {
+    TransformData inst[];
+};
+layout(std430, binding = 8) buffer CompMatrixBuffer {
+    mat4 modelCompMatrices[];
+};
+
+void main() {
+	if (gl_GlobalInvocationID.x >= modelCompMatrices.length()) return;
+	uint index = gl_GlobalInvocationID.x;
+	vec3 pos = vec3(inst[index].posX, inst[index].posY, inst[index].posZ);
+	vec3 ang = vec3(inst[index].rotX, inst[index].rotY, inst[index].rotZ);
+	vec3 c = cos(ang);
+	vec3 s = sin(ang);
+	float sY_sX = s.y * s.x;
+	float sY_cX = s.y * c.x;
+	// Построение матрицы на углах эйлера
+	modelCompMatrices[index] = mat4(
+	    c.y*c.z,			   -c.y*s.z,				s.y,		0.0,
+	    c.x*s.z + sY_sX*c.z,	c.x*c.z - sY_sX*s.z,   -s.x*c.y,	0.0,
+	    s.x*s.z - sY_cX*c.z,	s.x*c.z + sY_cX*s.z,	c.x*c.y,	0.0,
+	    pos.x, 					pos.y, 					pos.z,		1.0
+	);
+}

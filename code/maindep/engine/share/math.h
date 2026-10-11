@@ -55,12 +55,10 @@ namespace mth {
 	};
 
 	struct SEssenceMeta {
-		u_2b txtr_id; //( Draw_Texture_ID  ) Номер текстуры
+		i_2b txtr_id; //( Draw_Texture_ID  ) Номер текстуры
 		i_2b anim_id; //( Draw_Animated_ID ) Номер анимации
 		i_2b mesh_id; //( Draw_Command_ID  ) Номер модели 
 		i_2b inst_id; //( Draw_Instance_ID ) Номер инстанса
-		i_4b ID_Material;
-		i_4b ID_Instance;
 	};
 	struct SInstnOffSet {
 		enum WAYMASK : u_4b {

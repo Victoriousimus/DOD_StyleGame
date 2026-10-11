@@ -1,0 +1,35 @@
+OBJ Vertex Attrib to mesh block:
+	OBJ file Blender param:
+		Forward Axis : -Z
+			 Up Axis :  Y
+		
+		UV Coordinates : ok
+			   Normals : ok
+		  Triangulates : ok
+
+	VTN File Format:
+		0[ vertex[ x, y, z ], normals[ x , y , z ], textures[ x , y ] ]
+		1[ vertex[ x, y, z ], normals[ x , y , z ], textures[ x , y ] ]
+		2[ vertex[ x, y, z ], normals[ x , y , z ], textures[ x , y ] ]
+								***
+		n[ vertex[ x, y, z ], normals[ x , y , z ], textures[ x , y ] ]
+		
+	this format not used IndexArray!
+	
+RGB Vertex Attrib to Anim block:
+		 1 {   0,   0,   0 } Head
+		 2 {   0,  64,   0 } Body_1
+		 3 {   0, 128,   0 } Body_2
+		 4 {   0, 192,   0 } Body_3
+		 5 {  64,  32,   0 } L_Arm_1
+		 6 {   0,  32,  64 } R_Arm_1
+		 7 { 128,  32,   0 } L_Arm_2
+		 8 {   0,  32, 128 } R_Arm_2
+		 9 { 192,  32,   0 } L_Arm_3
+		10 {   0,  32, 192 } R_Arm_3
+		11 {  64, 192,   0 } L_Foot_1
+		12 {   0, 192,  64 } R_Foot_1
+		13 { 128, 192,   0 } L_Foot_2
+		14 {   0, 192, 128 } R_Foot_2
+		15 { 192, 192,   0 } L_Foot_3
+		16 {   0, 192, 192 } R_Foot_3

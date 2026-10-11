@@ -21,23 +21,6 @@
 
 // Обновление массива атрибутов
 __forceinline void Interpolation_Draw_Attributes() {
-	mth::F4_3pos Velos;
-	for (u_2b rendered = 0; rendered < emg_Render.count_instaces_; ++rendered) {
-		mth::SInstnAttrib& attributes = emg_ATR[rendered];
-		mth::F4_3pos& last_pos = emg_EPT[rendered];
-		if (last_pos.x == attributes.x && 
-			last_pos.y == attributes.y && 
-			last_pos.z == attributes.z ) continue;
-		mth::SInstnOffSet& offSets = emg_VEL[rendered];
-		offSets.GetVelosityPos(&Velos);
-		attributes.x += Velos.x;
-		attributes.y += Velos.y;
-		attributes.z += Velos.z;
-		offSets.GetVelosityRot(&Velos);
-		attributes.yaw  += Velos.x;
-		attributes.pich += Velos.y;
-		attributes.roll += Velos.z;
-	}
 }
 
 // Считать ввод для камеры, изменить позицию и углы
@@ -167,12 +150,12 @@ __forceinline void load_saheder_progs(u_4b* comp_Shader, u_4b* vert_Shader, u_4b
 	free(fileText);
 }
 // Загрузка массивов аттрибутов вершин
-__forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, u_4b* moDels_count) {
+__forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, i_4b* moDels_count) {
 	f_4b* all_VertexAttribsArray;
 	f_4b** vecArr = nullptr;	// указатель на массивы вершин
 	u_8b* vecLen = nullptr;		// указатели на длинны массивов
 	u_8b lengt_accum = 0;
-	u_4b moDel_count = 0;
+	i_4b moDel_count = 0;
 	t_wrd fileNames[MODELS_LIMIT] = {0};
 	t_wrd fileText;
 
@@ -186,7 +169,7 @@ __forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, u_4
 		*attrib_count = 0;
 		return;
 	}
-	for (u_4b j, i = 0; i < lengt_accum - 5; ++i) {
+	for (i_4b j, i = 0; i < lengt_accum - 5; ++i) {
 		if(CHECK_SYMBOLS_5pos_msh(fileText)) {
 			fileNames[moDel_count] = new t_sym[64];
 			if (!fileNames[moDel_count]) {
@@ -214,7 +197,7 @@ __forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, u_4
 	vecLen = new u_8b[moDel_count];	// <- Массив длин массивов по указателю
 	if (!vecArr || !vecLen) {
 		Logger.SetError("ERROR::[ render.h ]:vecArr = malloc(moDel_count * size); vecLen = malloc(moDel_count * size)\n");
-		for (u_4b i = 0; i < moDel_count; ++i) { delete[] fileNames[i]; }
+		for (i_4b i = 0; i < moDel_count; ++i) { delete[] fileNames[i]; }
 		if(vecLen) delete[] vecLen;
 		if(vecArr) delete[] vecArr;
 		*result_array = nullptr;
@@ -223,19 +206,19 @@ __forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, u_4
 		return;
 	}
 	lengt_accum = 0;
-	for (u_4b i = 0; i < moDel_count; ++i) { vecArr[i] = nullptr; }
+	for (i_4b i = 0; i < moDel_count; ++i) { vecArr[i] = nullptr; }
 	// Загружаем во вершины в массивы и формируем под него DrawComand
 #ifdef LOAD_CMD_STDOUT
 	std::cout << "--------------------------------------------------\n" << std::endl;
 #endif// LOAD_CMD_STDOUT
-	for (u_4b i = 0; i < moDel_count; ++i) {
+	for (i_4b i = 0; i < moDel_count; ++i) {
 		vecArr[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &vecLen[i]));// vecLen[i] - будет записана длинна массива в байтах
 		delete[] fileNames[i];
 		if (!vecArr[i]) {
 			Logger.SetError("ERROR::[ render.h ]:vecArr[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &vertx_count));\n");
 			// Подчищаем временные хранилища мешей
-			for (u_4b j = i; j > -1; --j) { iof::free_ultrafast_loaded_data(vecArr[j]); }
-			for (u_4b j = 0; j < moDel_count; ++j) { delete[] fileNames[j]; }
+			for (i_4b j = i; j > -1; --j) { iof::free_ultrafast_loaded_data(vecArr[j]); }
+			for (i_4b j = 0; j < moDel_count; ++j) { delete[] fileNames[j]; }
 			delete[] vecLen;
 			delete[] vecArr;
 			*result_array = nullptr; 
@@ -270,7 +253,7 @@ __forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, u_4
 	all_VertexAttribsArray = static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)));
 	if (!all_VertexAttribsArray) {
 		Logger.SetError("ERROR::[ render.h ]: static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)))\n");
-		for (u_4b i = 0; i < moDel_count;++i) { iof::free_ultrafast_loaded_data(vecArr[i]); }
+		for (i_4b i = 0; i < moDel_count;++i) { iof::free_ultrafast_loaded_data(vecArr[i]); }
 		delete[] vecLen;
 		delete[] vecArr;
 		*result_array = nullptr;
@@ -278,7 +261,7 @@ __forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, u_4
 		*attrib_count = 0;
 		return;
 	};
-	for (u_4b OnVec = 0, p = 0, i = 0; i < lengt_accum; ++i, ++p) {
+	for (i_4b OnVec = 0, p = 0, i = 0; i < lengt_accum; ++i, ++p) {
 		if (p >= vecLen[OnVec]) {
 			iof::free_ultrafast_loaded_data(vecArr[OnVec]);
 			p = 0; ++OnVec;
@@ -311,8 +294,8 @@ __forceinline void init_draw_params() {
 }
 // Init() < - Mассив трансформаций инстансов: attrib_ptr_draw[]. Заполняет матрицы: mProj, mView, mSpace
 __forceinline void init_view_matrix() {
-	emg_Render.atm_draw_cmd_update_.store(false); // Массив команд отрисовки изменен
-	emg_Render.atm_draw_cmd_freely_.store(true); // Массив команд отрисовки изменен
+	emg_Render.draw_command_update_.store(false); // Массив команд отрисовки изменен
+	emg_Render.draw_command_is_free_.store(true); // Массив команд отрисовки изменен
 	emg_Render.count_work_group_ = 0;
 	emg_Render.count_instaces_ = 0;
 	emg_Render.count_commands_ = 0;
@@ -557,11 +540,16 @@ __forceinline void emg::render::CreateFrame() {
 	// Очистка буфера цвета
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//Включаем шейдер вычислений
-	while (!emg_Render.atm_draw_cmd_freely_.exchange(false, std::memory_order_acquire)) {};
+	while (!emg_Render.draw_command_is_free_.exchange(false, std::memory_order_acquire)) {};
 	Interpolation_Draw_Attributes();
 	glUseProgram(Buffer.index_compute_shader_);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, Buffer.index_attribs_inderect_);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, (emg_Render.count_instaces_<<5), emg_ATR, GL_DYNAMIC_DRAW);
+	{
+		i_4b inst_stride = emg_Render.count_instaces_ << 5;		// =  X * 32
+		if (inst_stride > 0) {
+			glBufferData(GL_SHADER_STORAGE_BUFFER, inst_stride, emg_ATR, GL_DYNAMIC_DRAW);
+		}
+	}
 	// Привязка к слоту 1
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, Buffer.index_attribs_inderect_);
 	//Запуск расчетного шейдера
@@ -579,11 +567,14 @@ __forceinline void emg::render::CreateFrame() {
 	glBindVertexArray(Buffer.index_VAO_);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, Buffer.index_comands_inderect_);
 	//Отслеживаем изменения в буфере команд отрисовкиs
-	if (emg_Render.atm_draw_cmd_update_.load(std::memory_order_acquire)) {
-		glBufferData(GL_DRAW_INDIRECT_BUFFER, (emg_Render.count_commands_<<4), emg_CMD, GL_STATIC_DRAW);
-		emg_Render.atm_draw_cmd_update_.store(false, std::memory_order_release);
+	if (emg_Render.draw_command_update_.load(std::memory_order_acquire)) {
+		i_4b cmd_stride = emg_Render.count_commands_ << 4;	// =  X * 16
+		if (cmd_stride > 0) {
+			glBufferData(GL_DRAW_INDIRECT_BUFFER, cmd_stride, emg_CMD, GL_STATIC_DRAW);
+			emg_Render.draw_command_update_.store(false, std::memory_order_release);
+		}
 	}
-	emg_Render.atm_draw_cmd_freely_.store(true, std::memory_order_release);
+	emg_Render.draw_command_is_free_.store(true, std::memory_order_release);
 	//Активация текстур
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, Buffer.textures_index_[1]);
@@ -612,111 +603,108 @@ __forceinline void emg::render::CreateFrame() {
 #undef CHECK_SYMBOLS_5pos_msh
 #undef CHECK_SYMBOLS_5pos_atl
 #undef TEXTURES_LOAD_MODE
-
 //===========================================================================================
-#define Show_POS emg::Data.Logic.unit_global_step_[emg::Data.Render.essence_add_to_show_id_] //Данные для отрисовки объекта
-#define Show_ENT emg::Data.Logic.unit_visual_data_[emg::Data.Render.essence_add_to_show_id_] //Данные для отрисовки объекта
-#define Hide_ENT emg::Data.Logic.unit_visual_data_[emg::Data.Render.essence_add_to_hide_id_] //Данные для отрисовки объекта
-#define Data_ENT emg::Data.Logic.unit_visual_data_
-#define emg_CMD emg::Data.Render.DrawCommands_
-#define emg_ATR emg::Data.Render.InstnAttribs_
-#define emg_VEL emg::Data.Render.InstnOffSets_
-#define emg_EPT emg::Data.Render.InstnEndPoints_
-#define emg_Render emg::Data.Render
+#define UnitVisualData emg::Data.Logic.unit_visual_data_
+#define DRW_Commands emg::Data.Render.DrawCommands_
+#define DRW_Attribs emg::Data.Render.InstnAttribs_
 //Добавить сущность в рендер : emg::Data.Render.essence_add_to_show_id_
 __forceinline void emg::render::InserInRenderPipline() {
-	if (emg_Render.count_instaces_ >= ONLINE_LIMIT - 1) {
+	mth::SEssenceMeta& ToShow_EntyData = UnitVisualData[emg::Data.Render.essence_add_to_show_id_];
+	std::atomic<Bool>& IsFree = emg::Data.Render.draw_command_is_free_;
+	std::atomic<Bool>& Update = emg::Data.Render.draw_command_update_;
+	i_4b& InstCount = emg::Data.Render.count_instaces_;
+	i_4b& CmndCount = emg::Data.Render.count_commands_;
+	i_4b& WorkCount = emg::Data.Render.count_work_group_;
+
+	if (InstCount >= ONLINE_LIMIT - 1) {
 		Logger.SetError("ERROR::[ logic.h ]: add_active_essence_to_render()\n");
 		Logger.SetError("\temg_Render.count_instaces_ >= ONLINE_LIMIT\n");
 		Logger.SetError("\temg_Render.count_instaces_ = ");
-		Logger.SetError(emg_Render.count_instaces_);
+		Logger.SetError(InstCount);
 		Logger.SetError("\n");
 		return;
 	}
-	while (!emg_Render.atm_draw_cmd_freely_.exchange(false, std::memory_order_acquire)) { SLP_THRD(1); };
+	while (!IsFree.exchange(false, std::memory_order_acquire)) { SLP_THRD(1); };
 	//--------------[ Add to command ]--------------
-	i_2b& mesh = Show_ENT.mesh_id;
-	for (u_4b i = mesh + 1; i < emg_Render.count_commands_; ++i) {
-		emg_CMD[i].inst_first += 1;
+	i_2b& mesh = ToShow_EntyData.mesh_id;
+	for (i_4b i = mesh + 1; i < CmndCount; ++i) {
+		DRW_Commands[i].inst_first += 1;
 	}
-	emg_CMD[mesh].inst_count += 1;
+	DRW_Commands[mesh].inst_count += 1;
 	//------------[ Set then attribute ]------------
-	i_2b inst = static_cast<i_2b>(emg_CMD[mesh].inst_first);
-	for (u_4b i = 0; i < ENTITY_LIMIT; ++i) {
-		if (Data_ENT[i].inst_id >= inst) {
-			Data_ENT[i].inst_id += 1;
+	i_2b inst = static_cast<i_2b>(DRW_Commands[mesh].inst_first);
+	for (i_4b i = 0; i < ENTITY_LIMIT; ++i) {
+		if (UnitVisualData[i].inst_id >= inst) {
+			UnitVisualData[i].inst_id += 1;
 		}
 	}
-	Show_ENT.inst_id = static_cast<i_2b>(inst);
+	ToShow_EntyData.inst_id = static_cast<i_2b>(inst);
 	//-------------[ Add to attribute ]-------------
-	size_t bytes_to_move = (emg_Render.count_instaces_ - inst);
-	if (bytes_to_move > 0) {
-		std::memmove(&emg_ATR[inst + 1], &emg_ATR[inst], bytes_to_move << 5);
-		std::memmove(&emg_VEL[inst + 1], &emg_VEL[inst], bytes_to_move << 4);
-		std::memmove(&emg_EPT[inst + 1], &emg_EPT[inst], bytes_to_move * 12);
+	size_t bytes_to_move = (InstCount - inst);
+	if (bytes_to_move > 0) { 
+		std::memmove(&DRW_Attribs[inst + 1], &DRW_Attribs[inst], bytes_to_move << 5); 
 	}
-	emg_ATR[inst].ID_Instance = Show_ENT.inst_id;
-	emg_ATR[inst].ID_Material = Show_ENT.ID_Material;
-	emg_ATR[inst].x = 0;
-	emg_ATR[inst].y = 0;
-	emg_Render.count_instaces_ += 1;
-	emg_Render.count_work_group_ = (emg_Render.count_instaces_ + 127) >> 7;
+	DRW_Attribs[inst].ID_Instance = ToShow_EntyData.inst_id;
+	DRW_Attribs[inst].ID_Material = ToShow_EntyData.txtr_id;
+	DRW_Attribs[inst].x = 0;
+	DRW_Attribs[inst].y = 0;
+	InstCount += 1;
+	WorkCount = (InstCount + 127) >> 7;
 	//----------------------------------------------
-	emg_Render.atm_draw_cmd_update_.store(true, std::memory_order_release);
-	emg_Render.atm_draw_cmd_freely_.store(true, std::memory_order_release);
+	Update.store(true, std::memory_order_release);
+	IsFree.store(true, std::memory_order_release);
 }
 //Удалить сущность из рендера : emg::Data.Render.essence_add_to_hide_id_
 __forceinline void emg::render::EraseInRenderPipline() {
-	if (emg_Render.count_instaces_ <= 0) {
+	mth::SEssenceMeta& ToHide_EntyData = UnitVisualData[emg::Data.Render.essence_add_to_hide_id_];
+	std::atomic<Bool>& IsFree = emg::Data.Render.draw_command_is_free_;
+	std::atomic<Bool>& Update = emg::Data.Render.draw_command_update_;
+	i_4b& WorkCount = emg::Data.Render.count_work_group_;
+	i_4b& InstCount = emg::Data.Render.count_instaces_;
+	i_4b& CmndCount = emg::Data.Render.count_commands_;
+
+	if (InstCount <= 0) {
 		Logger.SetError("ERROR::[ logic.h ]: Del_active_essence_to_render()\n");
 		Logger.SetError("\temg_Render.count_instaces_ <= 0\n");
 		Logger.SetError("\temg_Render.count_instaces_ = ");
-		Logger.SetError(emg_Render.count_instaces_);
+		Logger.SetError(InstCount);
 		Logger.SetError("\n");
 		return;
 	}
-	i_2b& mesh = Hide_ENT.mesh_id;
-	i_2b& inst = Hide_ENT.inst_id;
-	if (emg_CMD[mesh].inst_count < 1) {
+	i_2b& mesh = ToHide_EntyData.mesh_id;
+	i_2b& inst = ToHide_EntyData.inst_id;
+	if (DRW_Commands[mesh].inst_count < 1) {
 		Logger.SetError("ERROR::[ logic.h ]: Del_active_essence_to_render()\n");
 		Logger.SetError("\temg_CMD[mesh].inst_count < 1\n");
 		Logger.SetError("\temg_CMD[mesh].inst_count = ");
-		Logger.SetError(emg_CMD[mesh].inst_count);
+		Logger.SetError(DRW_Commands[mesh].inst_count);
 		Logger.SetError("\n");
 		return;
 	}
 	//-----------[ Free then attribute ]------------
-	Hide_ENT.inst_id = -1;
+	ToHide_EntyData.inst_id = -1;
 	for (u_4b i = 0; i < ENTITY_LIMIT; ++i) {
-		if (Data_ENT[i].inst_id >= static_cast<i_2b>(inst)) {
-			Data_ENT[i].inst_id -= 1;
+		if (UnitVisualData[i].inst_id >= static_cast<i_2b>(inst)) {
+			UnitVisualData[i].inst_id -= 1;
 		}
 	}
 	//--------------[ Del in command ]--------------
-	while (!emg_Render.atm_draw_cmd_freely_.exchange(false, std::memory_order_acquire)) { SLP_THRD(1); };
-	emg_CMD[mesh].inst_count -= 1;
-	for (u_4b i = mesh + 1; i < emg_Render.count_commands_; ++i) {
-		emg_CMD[i].inst_first -= 1;
+	while (!IsFree.exchange(false, std::memory_order_acquire)) { SLP_THRD(1); };
+	DRW_Commands[mesh].inst_count -= 1;
+	for (i_4b i = mesh + 1; i < CmndCount; ++i) {
+		DRW_Commands[i].inst_first -= 1;
 	}
 	//-------------[ Del in attribute ]-------------
-	emg_Render.count_instaces_ -= 1;
-	size_t bytes_to_move = (emg_Render.count_instaces_ - inst);
-	std::memcpy(&emg_ATR[inst], &emg_ATR[inst+1], bytes_to_move << 6);
-	std::memcpy(&emg_VEL[inst], &emg_VEL[inst+1], bytes_to_move << 4);
-	std::memcpy(&emg_EPT[inst], &emg_EPT[inst+1], bytes_to_move * 12);
-	emg_Render.count_work_group_ = (emg_Render.count_instaces_ + 127) >> 7;
+	InstCount -= 1;
+	size_t bytes_to_move = (InstCount - inst);
+	std::memcpy(&DRW_Attribs[inst], &DRW_Attribs[inst+1], bytes_to_move << 6);
+	WorkCount = (InstCount + 127) >> 7;
 	//----------------------------------------------
-	emg_Render.atm_draw_cmd_update_.store(true, std::memory_order_release);
-	emg_Render.atm_draw_cmd_freely_.store(true, std::memory_order_release);
+	Update.store(true, std::memory_order_release);
+	IsFree.store(true, std::memory_order_release);
 }
-#undef Show_POS 
-#undef Show_ENT 
-#undef Hide_ENT 
-#undef Data_ENT 
-#undef emg_CMD
-#undef emg_ATR
-#undef emg_VEL
-#undef emg_EPT
-#undef emg_Render
+#undef UnitVisualData 
+#undef DRW_Commands
+#undef DRW_Attribs
 //===========================================================================================
 #endif //MY_LIB_RENDER_REALISATION

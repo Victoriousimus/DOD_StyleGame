@@ -1,0 +1,51 @@
+/*
+*	Вычисляем матрицы без кватерионов, 
+*	ради максимального сокращения количества операций
+*/
+#version 460
+
+layout(local_size_x = 128) in; // Работает с группами по N потоков
+
+struct TransformData {
+    float rotX;
+    float rotY;
+    float rotZ;
+    float posX;
+    float posY;
+    float posZ;
+    uint tex_id;
+    uint nrm_id;
+};
+
+layout(std430, binding = 1) buffer TransformInputBuffer {
+    TransformData transforms[];
+};
+layout(std430, binding = 8) buffer CompMatrixBuffer {
+    mat4 modelCompMatrices[];
+};
+
+void main() {
+	uint index = gl_GlobalInvocationID.x;
+	if (index >= modelCompMatrices.length()) return;
+	
+	// Предварительные вычисления
+	float cosX = cos(transforms[index].rotX);
+	float sinX = sin(transforms[index].rotX);
+	float cosY = cos(transforms[index].rotY);
+	float sinY = sin(transforms[index].rotY);
+	float cosZ = cos(transforms[index].rotZ);
+	float sinZ = sin(transforms[index].rotZ);
+	
+	// Вычисление компонентов
+	float sinX_sinY = sinX * sinY;
+	float cosX_sinY = cosX * sinY;
+	
+	// Построение матрицы на углах эйлера
+	modelCompMatrices[index] = mat4(
+	    cosY*cosZ,					-cosY*sinZ,                 sinY,					0.0,
+	    cosX*sinZ + sinX_sinY*cosZ,	cosX*cosZ - sinX_sinY*sinZ,	-sinX*cosY,				0.0,
+	    sinX*sinZ - cosX_sinY*cosZ,	sinX*cosZ + cosX_sinY*sinZ,	cosX*cosY,				0.0,
+	    transforms[index].posX, 	transforms[index].posY, 	transforms[index].posZ,	1.0
+	);
+	
+}

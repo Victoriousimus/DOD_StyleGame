@@ -98,9 +98,7 @@ namespace emg {
 	struct {//  LIMIT: 12 544 / 1 073 741 824 bytes
 		public:
 			struct { //render;
-				mth::F4_3pos InstnEndPoints_[ONLINE_LIMIT]{};	// Массив целевых точек
 				mth::SInstnAttrib InstnAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
-				mth::SInstnOffSet InstnOffSets_[ONLINE_LIMIT]{};	// Массив смещений
 				mth::SDrawCommand DrawCommands_[MODELS_LIMIT]{};	// Массив комманд
 				struct {
 					u_4b textures_index_[TEXTUR_LIMIT];	// ID текстурного буфера
@@ -126,15 +124,15 @@ namespace emg {
 					f_4b fov_{};	//Угол обора
 				} Camera;
 				f_4b* ViewMatrix_refc_{};	//Быстрая ссылка на матрицу Пространства
-				u_4b  ViewMatrix_size_{};	//Размер матрицы Пространства
-				u_4b count_texutres_{};		// Количество текстур и атласов
-				u_4b count_instaces_{};		// Количество инстансов в кадре
-				u_4b count_commands_{};		// Количество команд отрисовки
-				u_4b count_work_group_{};	//Количество рабочих групп в шейдере
+				i_4b  ViewMatrix_size_{};	//Размер матрицы Пространства
+				i_4b count_texutres_{};		// Количество текстур и атласов
+				i_4b count_instaces_{};		// Количество инстансов в кадре
+				i_4b count_commands_{};		// Количество команд отрисовки
+				i_4b count_work_group_{};	//Количество рабочих групп в шейдере
 				u_2b essence_add_to_show_id_{};
 				u_2b essence_add_to_hide_id_{};
-				std::atomic<Bool> atm_draw_cmd_update_{}; // Массив команд отрисовки изменен
-				std::atomic<Bool> atm_draw_cmd_freely_{}; // Массив команд отрисовки изменен
+				std::atomic<Bool> draw_command_update_{};	// Массив команд отрисовки изменен
+				std::atomic<Bool> draw_command_is_free_{};	// Массив команд отрисовки доступен
 			} Render;
 			struct { //window;
 				struct {//ПОЛЕ ПАРАМЕТРОВ:
