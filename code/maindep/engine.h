@@ -19,7 +19,9 @@
 	#define DBGONLY(only_debug_process) ;
 #endif // _DEBUG
 #ifdef NDEBUG
+#ifndef TEST_FRAME_TIME
 #pragma comment(linker, "/SUBSYSTEM:WINDOWS")
+#endif // TEST_FRAME_TIME
 #pragma comment(linker, "/ENTRY:mainCRTStartup")
 #endif // NDEBUG
 //-------------------------------------------------------------------------
@@ -123,6 +125,8 @@ namespace emg {
 					f_4b near_{};	//Плоскость отсечения
 					f_4b fov_{};	//Угол обора
 				} Camera;
+				PMem  DrawCommands_refc_{};	//Быстрая ссылка на матрицу Пространства
+				PMem  DrawAttribut_refc_{};	//Быстрая ссылка на матрицу Пространства
 				f_4b* ViewMatrix_refc_{};	//Быстрая ссылка на матрицу Пространства
 				i_4b  ViewMatrix_size_{};	//Размер матрицы Пространства
 				i_4b count_texutres_{};		// Количество текстур и атласов

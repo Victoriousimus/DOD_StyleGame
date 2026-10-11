@@ -1,8 +1,15 @@
 #pragma once
 #ifndef MY_LIB_OFFLINE_LOGICS_REALISATION
 #define MY_LIB_OFFLINE_LOGICS_REALISATION
+#ifdef EMG_LOGIC_STDOUT
+#define COUT_EMG_LOGIC(cout_procedure) cout_procedure;
+#else
+#define COUT_EMG_LOGIC(cout_procedure) ;
+#endif // EMG_LOGIC_STDOUT
+
 #define ToDraw(eIndex_to_draw) emg::Data.Logic.queue_add_to_draw_.psh(eIndex_to_draw)
 #define CORRECT_STEP(position) position > WORLD_SIZE-2? 1: position
+
 
 __forceinline void emg::logics::WorldMamagerTic() {
 	lgc::classes::CWorld& world = *static_cast<lgc::classes::CWorld*>(WorldVaribles.wrl);
@@ -13,12 +20,11 @@ __forceinline void emg::logics::WorldMamagerTic() {
 
 
 	}
-#ifdef EMG_LOGIC_STDOUT
-	_dbg_logic_procedures._dbg.logic_stdout();
-#endif//EMG_LOGIC_STDOUT
+	COUT_EMG_LOGIC(_dbg_logic_procedures._dbg.logic_stdout());
 }
 
 #undef ToDraw
 #undef CORRECT_STEP
+#undef COUT_EMG_LOGIC(cout_procedure)
 
 #endif //MY_LIB_OFFLINE_LOGICS_REALISATION

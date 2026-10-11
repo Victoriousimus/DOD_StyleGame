@@ -2,11 +2,6 @@
 #ifndef MY_LIB_LOGICS_REALISATION
 #define MY_LIB_LOGICS_REALISATION
 
-#define Enty_DRW emg::Data.Logic.unit_visual_data_ //Данные о перемещении оффлайн
-#define Enty_POS emg::Data.Logic.unit_global_step_ //Данные о перемещении оффлайн
-#define Enty_Curs emg::Data.Logic.online_manager_list_
-#define Enty_List emg::Data.Logic.online_list_
-
 #ifdef _DEBUG
 	#ifdef EMG_LOGIC_STDOUT
 	char char_map_world[WORLD_SIZE + 1][(WORLD_SIZE * 2) + 1];
@@ -108,18 +103,16 @@ namespace lgc {
 			virtual t_sym  Region(mth::U2_2pos& pos) = 0;
 		#undef SMngr
 	};
-	class IEntity {
-		public:
-			virtual i_2b Init(u_2b p, u_2b wrld_size) = 0;
-			virtual void Print(lgc::IWorld* _wrld) = 0;
-			virtual void Thnk(lgc::IWorld* _wrld) = 0;
-			virtual void Draw(u_4b wrld_size) = 0;
-	};
 }
 
 #include "logical/classes/CTerrain.h"
 #include "logical/classes/CWorld.h"
 
+
+#define Enty_DRW emg::Data.Logic.unit_visual_data_ //Данные о перемещении оффлайн
+#define Enty_POS emg::Data.Logic.unit_global_step_ //Данные о перемещении оффлайн
+#define Enty_Curs emg::Data.Logic.online_manager_list_
+#define Enty_List emg::Data.Logic.online_list_
 
 struct {
 	img::CStbImg img;
@@ -163,14 +156,13 @@ __forceinline void emg::logics::Exit() {
 	Enty_Curs.Release();
 }
 
-#undef Enty_DRW
-#undef Enty_POS
-#undef Enty_STP
+#undef Enty_DRW 
+#undef Enty_POS 
 #undef Enty_Curs
 #undef Enty_List
+
 #ifdef EMG_LOGIC_STDOUT
 #undef EMG_LOGIC_STDOUT
-#undef Poi_Drw
 #endif
 
 #include "logical/offline.h"

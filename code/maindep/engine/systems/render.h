@@ -19,8 +19,18 @@
 #define Camera emg::Data.Render.Camera
 #define TEXTURES_LOAD_MODE 3
 
+
+#ifdef LOAD_CMD_STDOUT
+#define COUT_CMD(cout_cmd_procedure) cout_cmd_procedure
+#else
+#define COUT_CMD(cout_cmd_procedure)
+#endif
+
 // Обновление массива атрибутов
 __forceinline void Interpolation_Draw_Attributes() {
+	for (i_4b i = 0; i < emg_Render.count_instaces_; ++i) {
+		//emg_ATR[i].yaw += 0.01f;
+	}
 }
 
 // Считать ввод для камеры, изменить позицию и углы
@@ -236,20 +246,18 @@ __forceinline void load_this_moDels(f_4b** result_array, u_8b* attrib_count, i_4
 			emg_CMD[i - 1].vert_count;
 		vecLen[i] = static_cast<u_4b>(vecLen[i] >> 2);			// Сдвиг чтобы сичтать f_4b
 		lengt_accum += vecLen[i];
-#ifdef LOAD_CMD_STDOUT
-		std::cout
-			<< "------------------------------------\n"
-			<< "[ inst_first : " << emg_CMD[i].inst_first << " ]; "
-			<< "[ inst_count : " << emg_CMD[i].inst_count << " ]; "
-			<< "[ vert_first : " << emg_CMD[i].vert_first << " ]; "
-			<< "[ vert_count : " << emg_CMD[i].vert_count << " ]; "
-			<< "------------------------------------\n"
-			<< std::endl;
-#endif// LOAD_CMD_STDOUT
+		COUT_CMD(
+				std::cout
+				<< "------------------------------------\n"
+				<< "[ inst_first : " << emg_CMD[i].inst_first << " ]; "
+				<< "[ inst_count : " << emg_CMD[i].inst_count << " ]; "
+				<< "[ vert_first : " << emg_CMD[i].vert_first << " ]; "
+				<< "[ vert_count : " << emg_CMD[i].vert_count << " ]; "
+				<< "------------------------------------\n"
+				<< std::endl
+			);
 	}
-#ifdef LOAD_CMD_STDOUT
-	std::cout<< "--------------------------------------------------\n" << std::endl;
-#endif// LOAD_CMD_STDOUT
+	COUT_CMD( std::cout<< "--------------------------------------------------\n" << std::endl );
 	all_VertexAttribsArray = static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)));
 	if (!all_VertexAttribsArray) {
 		Logger.SetError("ERROR::[ render.h ]: static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)))\n");
@@ -394,7 +402,10 @@ __forceinline void load_attr_to_GPU() {
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, Buffer.index_UBO_);
 	// Передадим смещения для моделей, которые будут обновляться каждый кадр
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, Buffer.index_attribs_inderect_);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(emg_ATR), emg_ATR, GL_DYNAMIC_DRAW);
+	//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(emg_ATR), emg_ATR, GL_DYNAMIC_DRAW);
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(emg_ATR), nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	emg_Render.DrawAttribut_refc_ =
+		glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(emg_CMD), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 	// Привязка к слоту 1
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, Buffer.index_attribs_inderect_);
 	// Передадим матрицы трансформации, которые будут расчитаны в шейдере
@@ -408,10 +419,10 @@ __forceinline void load_attr_to_GPU() {
 }
 // Init() < - Заполняет загружает и передает модели в матрицу
 __forceinline void load_mesh_to_GPU() {
-	f_4b* all_VertexAttribsArray;
+	f_4b* All_ModelsVertexes;
 	u_8b Vert_Сount;
 	// vertx_count - будет записанo количество элемнтов массива
-	load_this_moDels(&all_VertexAttribsArray, &Vert_Сount, &emg_Render.count_commands_);
+	load_this_moDels(&All_ModelsVertexes, &Vert_Сount, &emg_Render.count_commands_);
 	if (!Vert_Сount) return;
 	// Создание VAO
 	glGenVertexArrays(1, &Buffer.index_VAO_);
@@ -420,7 +431,7 @@ __forceinline void load_mesh_to_GPU() {
 	glGenBuffers(1, &Buffer.index_VBO_);
 	glBindBuffer(GL_ARRAY_BUFFER, Buffer.index_VBO_);
 	//glBufferStorage( ***, ***, 0) - передав 0 скажем драйверу,что данные не изменяются
-	glBufferStorage(GL_ARRAY_BUFFER, Vert_Сount * sizeof(f_4b), all_VertexAttribsArray, 0);
+	glBufferStorage(GL_ARRAY_BUFFER, Vert_Сount * sizeof(f_4b), All_ModelsVertexes, 0);
 	// Координаты (layout location = 0)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
 	glEnableVertexAttribArray(0);
@@ -433,13 +444,16 @@ __forceinline void load_mesh_to_GPU() {
 	// Массив команд отрисовки
 	glGenBuffers(1, &Buffer.index_comands_inderect_);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, Buffer.index_comands_inderect_);
-	glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(emg_CMD), emg_CMD, GL_STATIC_DRAW);
+	//glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(emg_CMD), emg_CMD, GL_STATIC_DRAW);
+	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, sizeof(emg_CMD), nullptr,	GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	emg_Render.DrawCommands_refc_ = 
+		glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, sizeof(emg_CMD),	GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 	// Деактивация буферов
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
 	glBindBuffer(GL_ARRAY_BUFFER, NULL);
 	glBindVertexArray(NULL);
 	// Отчистка памяти массива мешей
-	free(all_VertexAttribsArray);
+	free(All_ModelsVertexes);
 }
 // Init() < - Загрузка буфферов в GPU
 __forceinline void load_txtr_to_GPU() {
@@ -543,21 +557,25 @@ __forceinline void emg::render::CreateFrame() {
 	while (!emg_Render.draw_command_is_free_.exchange(false, std::memory_order_acquire)) {};
 	Interpolation_Draw_Attributes();
 	glUseProgram(Buffer.index_compute_shader_);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, Buffer.index_attribs_inderect_);
 	{
-		i_4b inst_stride = emg_Render.count_instaces_ << 5;		// =  X * 32
-		if (inst_stride > 0) {
-			glBufferData(GL_SHADER_STORAGE_BUFFER, inst_stride, emg_ATR, GL_DYNAMIC_DRAW);
+		//Передаем данные о вершинах, с проверкой на переполнение
+		i_4b byte_size = emg_Render.count_instaces_ << 5;		// =  X * 32
+		if (byte_size > 0) memcpy(emg_Render.DrawAttribut_refc_, emg_ATR, byte_size);
+		//Отслеживаем изменения в буфере команд отрисовкиs
+		if (emg_Render.draw_command_update_.load(std::memory_order_acquire)) {
+			byte_size = emg_Render.count_commands_ << 4;	// =  X * 16
+			if (byte_size > 0) {
+				memcpy(emg_Render.DrawCommands_refc_, emg_CMD, byte_size);
+			}
 		}
 	}
-	// Привязка к слоту 1
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, Buffer.index_attribs_inderect_);
+	emg_Render.draw_command_is_free_.store(true, std::memory_order_release);
 	//Запуск расчетного шейдера
 	glDispatchCompute(emg_Render.count_work_group_, 1, 1);
 	//Обновить позицию камеры (считать ввод для камеры)
 	scene_update_camera();
 	//Проверка окончания работы расчетного шейдера
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
 	//После рсчета переходим к рендерингу
 	glUseProgram(Buffer.index_drawind_shader_);
 	//Передаем матрицу камеры
@@ -565,20 +583,11 @@ __forceinline void emg::render::CreateFrame() {
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_Render.ViewMatrix_size_, emg_Render.ViewMatrix_refc_);
 	//Активация вершинного массива и массива команд
 	glBindVertexArray(Buffer.index_VAO_);
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, Buffer.index_comands_inderect_);
-	//Отслеживаем изменения в буфере команд отрисовкиs
-	if (emg_Render.draw_command_update_.load(std::memory_order_acquire)) {
-		i_4b cmd_stride = emg_Render.count_commands_ << 4;	// =  X * 16
-		if (cmd_stride > 0) {
-			glBufferData(GL_DRAW_INDIRECT_BUFFER, cmd_stride, emg_CMD, GL_STATIC_DRAW);
-			emg_Render.draw_command_update_.store(false, std::memory_order_release);
-		}
-	}
-	emg_Render.draw_command_is_free_.store(true, std::memory_order_release);
 	//Активация текстур
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, Buffer.textures_index_[1]);
 	//Отрисовка всех инстансов ( режим отрисовки, начало, количество команд, шаг )
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, Buffer.index_comands_inderect_);
 	glMultiDrawArraysIndirect(GL_TRIANGLES,0, emg_Render.count_commands_,sizeof(mth::SDrawCommand));
 	//Деактивация вершинного массива и буфферов
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
@@ -706,5 +715,6 @@ __forceinline void emg::render::EraseInRenderPipline() {
 #undef UnitVisualData 
 #undef DRW_Commands
 #undef DRW_Attribs
+#undef COUT_CMD(cout_cmd_procedure)
 //===========================================================================================
 #endif //MY_LIB_RENDER_REALISATION

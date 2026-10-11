@@ -5,6 +5,14 @@
 #define emg_PAR emg::Data.Window.Params
 #define emg_INP emg::Data.Window.Input
 
+#ifdef _WIN32
+#define USEWINFUNC(win_func) win_func
+#else
+#define USEWINFUNC(win_func)
+#endif // _WIN32
+
+
+
 // Сбросить таймер окна
 __forceinline void emg::window::ReSetTime() { glfwSetTime(0); }
 // Возвращает значение таймера окна
@@ -58,11 +66,11 @@ __forceinline void emg::window::Init() {
 	glfwWindowHint(GLFW_FOCUSED, emg_PAR.Flags.wind_focus_);	// Фокус на окне
 	glfwWindowHint(GLFW_SAMPLES, emg_PAR.Flags.glfw_smpls_);	// MSAA для сглаживания
 	glfwWindowHint(GLFW_STENCIL_BITS, 0);				// Экономим на станциле
-	glfwWindowHint(GLFW_DEPTH_BITS, 24);	//Размерность буффера глубины
-	glfwWindowHint(GLFW_RED_BITS,	8);		//Глубина цвета растреризации КРАСНЫЙ
-	glfwWindowHint(GLFW_GREEN_BITS, 8);		//Глубина цвета растреризации ЗЕЛЕНЫЙ
-	glfwWindowHint(GLFW_BLUE_BITS,	8);		//Глубина цвета растреризации СИНИЙ
-	glfwWindowHint(GLFW_ALPHA_BITS, 8);		//Глубина цвета растреризации АЛЬФА
+	glfwWindowHint(GLFW_DEPTH_BITS, 20);	//Размерность буффера глубины
+	glfwWindowHint(GLFW_RED_BITS,	4);		//Глубина цвета растреризации КРАСНЫЙ
+	glfwWindowHint(GLFW_GREEN_BITS, 4);		//Глубина цвета растреризации ЗЕЛЕНЫЙ
+	glfwWindowHint(GLFW_BLUE_BITS,	4);		//Глубина цвета растреризации СИНИЙ
+	glfwWindowHint(GLFW_ALPHA_BITS, 0);		//Глубина цвета растреризации АЛЬФА
 
 	// 2. Настройка параметров окна
 	if (emg_PAR.Flags.fullscreen_) {
@@ -88,7 +96,25 @@ __forceinline void emg::window::Init() {
 	glfwMakeContextCurrent(emg_DET.win_refc_);
 	glfwGetFramebufferSize(emg_DET.win_refc_, &emg_PAR.Size.width_, &emg_PAR.Size.heigth_);
 	if (emg_PAR.Flags.vert_sinkh_) {
-		glfwSwapInterval(1); // Вертикальная синхронизация
+		// Вертикальная синхронизация
+		glfwSwapInterval(1); 
+		// Проверяем поддержку расширения
+		USEWINFUNC(
+				if (glfwExtensionSupported("WGL_EXT_swap_control")) {
+					// Получаем указатель на функцию
+					typedef int (WINAPI* PFNWGLGETSWAPINTERVALEXTPROC)(void);
+					PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT =
+						(PFNWGLGETSWAPINTERVALEXTPROC)glfwGetProcAddress("wglGetSwapIntervalEXT");
+					if (wglGetSwapIntervalEXT) {
+						// Запрашиваем текущее значение
+						if (wglGetSwapIntervalEXT() == 0) {
+							Logger.SetError("Failed glfwSwapInterval(1) GLFW_API\n");
+							Logger.SetError("Chek you GPU setting\n");
+						}
+					}
+				}
+			);
+
 	}
 }
 #undef emg_DET

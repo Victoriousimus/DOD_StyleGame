@@ -1,15 +1,25 @@
-#include "maindep/engine.h"
 
+#define TEST_FRAME_TIME 500
+#include "maindep/engine.h"
 // битовае маски (N - 1), тоже что и x % N, где N - степень двойки
 #define MICRO_STEP 24	// ≈сли (frame_count % ONLINE_BITMASK) == 0, пробуждаем поток данных в кадре(звук, активна€ логика)
 #define MACRO_STEP 255	// ≈сли (frame_count % SOUNDS_BITMASK) == 0, пробуждаем мировой поток
-//#define TEST_FRAME_TIME 400
+#ifdef TEST_FRAME_TIME
+#define TEST_FRAME_FUNC(frame_func) frame_func
+#else
+#define TEST_FRAME_FUNC(frame_func) ;
+#endif
+#ifdef TEST_POSITION
+#define TEST_POSITION_FUNC(position_func) position_func
+#else
+#define TEST_POSITION_FUNC(position_func) ;
+#endif
 
 i_4b main() {
-#ifdef TEST_FRAME_TIME
-	u_8b count = 0;
-	f_8b accum = 0;
-#endif
+	TEST_FRAME_FUNC(
+			u_8b count = 0;
+			f_8b accum = 0;
+		);
 	u_1b frame_count = 0;
 	Bool run_flag = true;
 	Logger.Init();
@@ -49,7 +59,7 @@ i_4b main() {
 		thrd::GM_Thread offline_world_thread(emg::logics::WorldMamagerTic);
 		thrd::GM_Thread online_world_thread(emg::logics::LocalManagerTic);
 		while (run_flag && emg::window::IsRunned()) {
-			if (emg::window::GetTime() < 0.0157f) continue;
+			//if (emg::window::GetTime() < 0.0157f) continue;
 			++frame_count;
 			emg::window::UpdateEvent();
 			if (emg::Data.Window.Input.key_flags_[EMG_INPUT_EXIT]) {
@@ -63,42 +73,41 @@ i_4b main() {
 				offline_world_thread.step();
 			emg::render::CreateFrame();
 			emg::window::UpdateFrame();
-#ifdef TEST_FRAME_TIME 
-			accum += emg::window::GetTime();
-			if (++count >= TEST_FRAME_TIME) {
-				run_flag = false;
-				online_world_thread.stop();
-				offline_world_thread.stop();
-			}
-#endif
-#ifdef TEST_POSITION
-			std::cout
-				<< "X:  " << emg::Data.Render.Camera.postn_.x
-				<< "Y:  " << emg::Data.Render.Camera.postn_.y
-				<< "Z:  " << emg::Data.Render.Camera.postn_.z
-				<< std::endl;
-#endif
-			emg::window::ReSetTime();
+
+			TEST_FRAME_FUNC(
+					accum += emg::window::GetTime();
+					emg::window::ReSetTime();
+					if (++count >= TEST_FRAME_TIME) {
+						run_flag = false;
+						online_world_thread.stop();
+						offline_world_thread.stop();
+					}
+				); 
+			TEST_POSITION_FUNC(
+					std::cout
+					<< "X:  " << emg::Data.Render.Camera.postn_.x
+					<< "Y:  " << emg::Data.Render.Camera.postn_.y
+					<< "Z:  " << emg::Data.Render.Camera.postn_.z
+					<< std::endl
+				);
 		}//while(run && !emg::Data.Window.IsRunned())
 	}//if(Logger.error_flag_ >= 0)
 	emg::logics::Exit();
 	emg::render::Exit();
 	emg::window::Exit();
 	Logger.Exit();
-#ifdef TEST_FRAME_TIME
-	std::cout
-		<< "\nRENDER FARAME TEST RESULT : "
-		<< "\n"
-		<< "\n\tTEST FRAME COUNTER [ " << static_cast<f_8b>(count) << " ];"
-		<< "\n\tTEST FRAME TIMER   [ " << static_cast<f_8b>(accum) << " ];"
-		<< "\n"
-		<< "\n\tMIDDLE FRAME TIME  [ " << static_cast<f_8b>(accum / static_cast<f_8b>(count))		 << " ];"
-		<< "\n\tMIDDLE FPS         [ " << static_cast<f_8b>(1.0f)/(accum / static_cast<f_8b>(count)) << " ];"
-		<< std::endl;
-	system("pause");
-#endif
-#ifdef EMG_ALLOC_STDOUT
-	_CrtDumpMemoryLeaks();
-#endif // EMG_ALLOC_STDOUT
+	TEST_FRAME_FUNC(
+			std::cout
+			<< "\nRENDER FARAME TEST RESULT : "
+			<< "\n"
+			<< "\n\tTEST FRAME COUNTER [ " << static_cast<f_8b>(count) << " ];"
+			<< "\n\tTEST FRAME TIMER   [ " << static_cast<f_8b>(accum) << " ];"
+			<< "\n"
+			<< "\n\tMIDDLE FRAME TIME  [ " << static_cast<f_8b>(accum / static_cast<f_8b>(count)) << " ];"
+			<< "\n\tMIDDLE FPS         [ " << static_cast<f_8b>(1.0f) / (accum / static_cast<f_8b>(count)) << " ];"
+			<< std::endl;
+			system("pause");
+		);
+	TEST_POSITION_FUNC(_CrtDumpMemoryLeaks());
 	return 0;
 }

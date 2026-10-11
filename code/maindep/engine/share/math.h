@@ -140,19 +140,17 @@ namespace mth {
 			out = 0;
 			return arr[lim];
 		}
-#ifdef _DEBUG
-		__forceinline void Print() {
+		DBGONLY( __forceinline void Print() {
 			std::cout << "QUEUE_ARRAY:" << std::endl;
 			for (u_2b i = 0; i < MTH_ARR_QUEUE; ++i) {
-				std::cout 
-					<< "\t[" << i << "]\t  value = " << std::dec << arr[i] 
-					<< (i==inp? "  <- INP" : "")
-					<< (i==out? "  <- OUT" : "")
+				std::cout
+					<< "\t[" << i << "]\t  value = " << std::dec << arr[i]
+					<< (i == inp ? "  <- INP" : "")
+					<< (i == out ? "  <- OUT" : "")
 					<< std::endl;
 			}
 			std::cout << std::endl;
-		}
-#endif
+		});
 	};
 #endif // MTH_ARR_QUEUE
 
@@ -229,9 +227,7 @@ namespace mth {
             if (*cur == nullptr) return -1;
             return (*cur)->value;
         }
-
-#ifdef _DEBUG
-		__forceinline void Print() {
+		DBGONLY(__forceinline void Print() {
 			if (list_ptr == nullptr) {
 				std::cout << "\t< Ox" << std::hex << (u_8b)&list_ptr
 					<< " > List_Manager _data< Ox" << std::hex << (u_8b)list_ptr << " >" << std::endl;
@@ -267,8 +263,7 @@ namespace mth {
 				tmp = tmp->next; ++indx;
 			}
 			std::cout << std::dec << std::endl;
-		}
-#endif // _DEBUG
+		} );
 	};
 #endif//MTH_LIST_STRCT
 }

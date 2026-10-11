@@ -7,6 +7,19 @@
 #define t_Thrd_ std::thread
 #define t_Mutx_ std::mutex
 
+#ifdef THREAD_STDOUT_MODE
+#define COUT_THREAD(thread_out_procedure) thread_out_procedure;
+#else
+#define COUT_THREAD(thread_out_procedure);
+#endif
+#ifdef EMG_ALLOC_STDOUT
+#define COUT_ALLOC(thread_out_procedure) thread_out_procedure;
+#else
+#define COUT_ALLOC(thread_out_procedure);
+#endif
+
+
+
 namespace thrd{
 	class GM_Thread {
 private:
@@ -18,20 +31,14 @@ private:
 		void(*_the_main_proc)();
 public:
 		GM_Thread(void(*__procedure_pointer)()){
-
-#ifdef THREAD_STDOUT_MODE
-			std::cout << "STEP IN TO THREAD CONSTRUKTOR\n";
-#endif //THREAD_STDOUT_MODE
-
+			COUT_THREAD(std::cout << "STEP IN TO THREAD CONSTRUKTOR\n");
 			this->work_.store(true);//после первого прогона, отправл€ем поток спать
 			this->step_.store(false);//после первого прогона, отправл€ем поток спать
 			this->_the_main_proc = __procedure_pointer;
 			this->thrd_ = t_Thrd_(
 				[this]()
 				{// thisthrd_ BEGIN
-#ifdef THREAD_STDOUT_MODE
-					std::cout << "START_WORK_THREAD: " << std::thisthrd_::get_id() << '\n';
-#endif //THREAD_STDOUT_MODE
+					COUT_THREAD(std::cout << "START_WORK_THREAD: " << std::thisthrd_::get_id() << '\n');
 					t_Lock locker(this->mx_);
 					locker.unlock();
 					 do {
@@ -41,20 +48,14 @@ public:
 						this->step_.store(false);
 						locker.unlock();
 					 } while (work_);
-#ifdef EMG_ALLOC_STDOUT
-					 _CrtDumpMemoryLeaks();
-#endif // EMG_ALLOC_STDOUT
-#ifdef THREAD_STDOUT_MODE
-					std::cout << "END_WORK_THREAD: " << std::thisthrd_::get_id() << '\n';
-#endif //THREAD_STDOUT_MODE
+					 COUT_ALLOC(_CrtDumpMemoryLeaks());
+					 COUT_THREAD(std::cout << "END_WORK_THREAD: " << std::thisthrd_::get_id() << '\n');
 				}// thisthrd_ END
 			);
 		}
 		// after __runstep_ = false only!!!
 		~GM_Thread() {
-#ifdef THREAD_STDOUT_MODE
-			std::cout << "STEP IN TO THREAD DESTRUKTOR ";
-#endif //THREAD_STDOUT_MODE
+			COUT_THREAD(std::cout << "STEP IN TO THREAD DESTRUKTOR ");
 			if (!this->thrd_.joinable()) return;
 			this->step_.store(true);
 			this->cv_.notify_one();
@@ -77,4 +78,7 @@ public:
 #undef t_Flag_
 #undef t_Thrd_
 #undef t_Mutx_
+#undef COUT_THREAD(thread_out_procedure);
+#undef COUT_ALLOC(thread_out_procedure);
+
 #endif
