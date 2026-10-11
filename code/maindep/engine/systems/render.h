@@ -624,7 +624,7 @@ __forceinline void emg::render::CreateFrame() {
 #define emg_EPT emg::Data.Render.InstnEndPoints_
 #define emg_Render emg::Data.Render
 //Добавить сущность в рендер : emg::Data.Render.essence_add_to_show_id_
-__forceinline void emg::render::AddInScene_on_ShowID() {
+__forceinline void emg::render::InserInRenderPipline() {
 	if (emg_Render.count_instaces_ >= ONLINE_LIMIT - 1) {
 		Logger.SetError("ERROR::[ logic.h ]: add_active_essence_to_render()\n");
 		Logger.SetError("\temg_Render.count_instaces_ >= ONLINE_LIMIT\n");
@@ -655,8 +655,8 @@ __forceinline void emg::render::AddInScene_on_ShowID() {
 		std::memmove(&emg_VEL[inst + 1], &emg_VEL[inst], bytes_to_move << 4);
 		std::memmove(&emg_EPT[inst + 1], &emg_EPT[inst], bytes_to_move * 12);
 	}
-	emg_ATR[inst].Atlas_X = Show_ENT.Atlas_X;
-	emg_ATR[inst].Atlas_Y = Show_ENT.Atlas_Y;
+	emg_ATR[inst].ID_Instance = Show_ENT.inst_id;
+	emg_ATR[inst].ID_Material = Show_ENT.ID_Material;
 	emg_ATR[inst].x = 0;
 	emg_ATR[inst].y = 0;
 	emg_Render.count_instaces_ += 1;
@@ -666,7 +666,7 @@ __forceinline void emg::render::AddInScene_on_ShowID() {
 	emg_Render.atm_draw_cmd_freely_.store(true, std::memory_order_release);
 }
 //Удалить сущность из рендера : emg::Data.Render.essence_add_to_hide_id_
-__forceinline void emg::render::DelInScene_on_HideID() {
+__forceinline void emg::render::EraseInRenderPipline() {
 	if (emg_Render.count_instaces_ <= 0) {
 		Logger.SetError("ERROR::[ logic.h ]: Del_active_essence_to_render()\n");
 		Logger.SetError("\temg_Render.count_instaces_ <= 0\n");

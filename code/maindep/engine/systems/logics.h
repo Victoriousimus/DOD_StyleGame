@@ -152,8 +152,8 @@ __forceinline void emg::logics::Init() {
 		Enty_DRW[i].txtr_id = 1;
 		Enty_DRW[i].anim_id = -1;
 		Enty_DRW[i].inst_id = -1;
-		Enty_DRW[i].Atlas_X = 0;
-		Enty_DRW[i].Atlas_Y = 0;
+		Enty_DRW[i].ID_Material = 0;
+		Enty_DRW[i].ID_Instance = 0;
 
 	}
 	Enty_Curs.Attach(&Enty_List);

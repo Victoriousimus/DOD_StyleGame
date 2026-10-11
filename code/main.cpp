@@ -36,7 +36,7 @@ i_4b main() {
 
 	emg::Data.Files.files_data_map_= "data/data_map.mem";
 
-	emg::Data.Render.Camera.fov_ = 60.0f;
+	emg::Data.Render.Camera.fov_ = 75.0f;
 	emg::Data.Render.Camera.far_ = 4096.0f;//16*96
 	emg::Data.Render.Camera.near_ = 0.1f;
 	emg::Data.Render.Camera.velocity_ = 0.08f;
@@ -46,8 +46,8 @@ i_4b main() {
 	if (Logger.error_flag_ >= 0) emg::logics::Init();
 
 	if (Logger.error_flag_ >= 0) {
-		thrd::GM_Thread offline_world_thread(emg::logics::Offline_world_iteration);
-		thrd::GM_Thread online_world_thread(emg::logics::Online_world_iteration);
+		thrd::GM_Thread offline_world_thread(emg::logics::WorldMamagerTic);
+		thrd::GM_Thread online_world_thread(emg::logics::LocalManagerTic);
 		while (run_flag && emg::window::IsRunned()) {
 			if (emg::window::GetTime() < 0.0157f) continue;
 			++frame_count;

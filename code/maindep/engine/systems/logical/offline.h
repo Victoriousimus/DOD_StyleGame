@@ -4,7 +4,7 @@
 #define ToDraw(eIndex_to_draw) emg::Data.Logic.queue_add_to_draw_.psh(eIndex_to_draw)
 #define CORRECT_STEP(position) position > WORLD_SIZE-2? 1: position
 
-__forceinline void emg::logics::Offline_world_iteration() {
+__forceinline void emg::logics::WorldMamagerTic() {
 	lgc::classes::CWorld& world = *static_cast<lgc::classes::CWorld*>(WorldVaribles.wrl);
 	for (u_2b offline_indx = 0; offline_indx < ENTITY_LIMIT; ++offline_indx) {
 		if (emg::Data.Logic.unit_visual_data_[offline_indx].inst_id < 0) continue; //≈сли логика не обрабатываетс€ подробно

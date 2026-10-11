@@ -1,7 +1,6 @@
 #pragma once
 #ifndef _EMG_MATH_ATTACH_
 #define _EMG_MATH_ATTACH_
-#include <math.h>
 
 #define METER_TO_FLOAT 0.000247f
 #define MTH_PI 3.1415926f		//Число PI
@@ -60,8 +59,8 @@ namespace mth {
 		i_2b anim_id; //( Draw_Animated_ID ) Номер анимации
 		i_2b mesh_id; //( Draw_Command_ID  ) Номер модели 
 		i_2b inst_id; //( Draw_Instance_ID ) Номер инстанса
-		f_4b Atlas_X;
-		f_4b Atlas_Y;
+		i_4b ID_Material;
+		i_4b ID_Instance;
 	};
 	struct SInstnOffSet {
 		enum WAYMASK : u_4b {
@@ -91,8 +90,8 @@ namespace mth {
 		f_4b x;
 		f_4b z;	//}{0ba
 		f_4b y;	//}{0ba
-		f_4b Atlas_X;
-		f_4b Atlas_Y;
+		i_4b ID_Material;
+		i_4b ID_Instance;
 	};
 	//Структура команды отрисовки DrawArraysIndirectCommand = 128_bit
 	struct SDrawCommand {

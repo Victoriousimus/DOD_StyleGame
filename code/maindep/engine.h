@@ -40,9 +40,6 @@
 #define DUMBPATHER_DEFAULT_FAST		// Поиск пути по умолчанию считает ячейку легкопроходимой
 #define SPoint2u mth::U2_2pos
 
-
-
-
 #ifdef EMG_ALLOC_STDOUT
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
@@ -50,7 +47,6 @@
 #endif
 
 //Подключаем глобальные библиотеки
-
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -200,15 +196,17 @@ namespace emg {
 		__forceinline extern void Init();
 		__forceinline extern void Exit();
 		__forceinline extern void CreateFrame();
-		__forceinline extern void AddInScene_on_ShowID();
-		__forceinline extern void DelInScene_on_HideID();
+		__forceinline extern void InserInRenderPipline();
+		__forceinline extern void EraseInRenderPipline();
 	}
 	namespace logics {
 		__forceinline extern void Init();
 		__forceinline extern void Exit();
-		__forceinline extern void Offline_world_iteration();
-		__forceinline extern void Online_world_iteration();
+		__forceinline extern void WorldMamagerTic();
+		__forceinline extern void LocalManagerTic();
 	}
+
+
 	namespace iofile {
 		enum FILES_TYPE : u_1b {
 			COMP_SHADER,

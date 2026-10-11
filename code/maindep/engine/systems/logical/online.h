@@ -3,8 +3,8 @@
 #define MY_LIB_ONLINE_LOGICS_REALISATION
 #define Curs emg::Data.Logic.online_manager_list_
 #define Queue emg::Data.Logic.queue_add_to_draw_
-#define ToDraw(eIndexToDraw) { emg::Data.Render.essence_add_to_show_id_ = eIndexToDraw; emg::render::AddInScene_on_ShowID(); }
-#define ToHide(eIndexToDraw) { emg::Data.Render.essence_add_to_hide_id_ = eIndexToDraw; emg::render::DelInScene_on_HideID(); }
+#define ToDraw(eIndexToDraw) { emg::Data.Render.essence_add_to_show_id_ = eIndexToDraw; emg::render::InserInRenderPipline(); }
+#define ToHide(eIndexToDraw) { emg::Data.Render.essence_add_to_hide_id_ = eIndexToDraw; emg::render::EraseInRenderPipline(); }
 
 
 enum WAYMASK {
@@ -25,7 +25,7 @@ __forceinline Bool online_process(i_2b& _indx) {
 	return false;
 }
 
-__forceinline void emg::logics::Online_world_iteration() {
+__forceinline void emg::logics::LocalManagerTic() {
 	i_2b enty_indx = 0;
 	Bool hide_flag;
 	Curs.First();
