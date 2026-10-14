@@ -1,4 +1,4 @@
-да#pragma once
+#pragma once
 #ifndef _EMG_MATH_ATTACH_
 #define _EMG_MATH_ATTACH_
 
