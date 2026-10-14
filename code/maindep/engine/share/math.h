@@ -1,16 +1,16 @@
-#pragma once
+РґР°#pragma once
 #ifndef _EMG_MATH_ATTACH_
 #define _EMG_MATH_ATTACH_
 
 #define METER_TO_FLOAT 0.000247f
-#define MTH_PI 3.1415926f		//Число PI
-#define MTH_ANGLE_R 0.0174532f	//Угловой коэфициент PI/180
-#define MTH_ANGLE_A 57,295779f	//Угловой коэфициент 180/PI
-#define MTH_RADIANS 6.2831853f	//Число 2 * PI
-#define MTH_MIN_ANG_Y -1.57075f	//Число -PI/2
-#define MTH_MAX_ANG_Y  1.57075f	//Число  PI/2
-#define MTH_ANG360(ang) ((int)ang % 360) + (ang - (int)ang)					//Приведение градуированного угла
-#define MTH_ANGRAD(ang) (f_4b)((int)(ang*10000000) % 62831853)/10000000.0f	//Приведение радиального угла
+#define MTH_PI 3.1415926f		//Г—ГЁГ±Г«Г® PI
+#define MTH_ANGLE_R 0.0174532f	//Г“ГЈГ«Г®ГўГ®Г© ГЄГ®ГЅГґГЁГ¶ГЁГҐГ­ГІ PI/180
+#define MTH_ANGLE_A 57.295779f	//Г“ГЈГ«Г®ГўГ®Г© ГЄГ®ГЅГґГЁГ¶ГЁГҐГ­ГІ 180/PI
+#define MTH_RADIANS 6.2831853f	//Г—ГЁГ±Г«Г® 2 * PI
+#define MTH_MIN_ANG_Y -1.57075f	//Г—ГЁГ±Г«Г® -PI/2
+#define MTH_MAX_ANG_Y  1.57075f	//Г—ГЁГ±Г«Г®  PI/2
+#define MTH_ANG360(ang) ((int)ang % 360) + (ang - (int)ang)					//ГЏГ°ГЁГўГҐГ¤ГҐГ­ГЁГҐ ГЈГ°Г Г¤ГіГЁГ°Г®ГўГ Г­Г­Г®ГЈГ® ГіГЈГ«Г 
+#define MTH_ANGRAD(ang) (f_4b)((int)(ang*10000000) % 62831853)/10000000.0f	//ГЏГ°ГЁГўГҐГ¤ГҐГ­ГЁГҐ Г°Г Г¤ГЁГ Г«ГјГ­Г®ГЈГ® ГіГЈГ«Г 
 #define MTH_ADDRAD(ang) ang += (ang < 0 ? SPT_RADIANS : (ang >= SPT_RADIANS ? -SPT_RADIANS : 0.01f));
 
 typedef void* PMem;
@@ -55,10 +55,10 @@ namespace mth {
 	};
 
 	struct SEssenceMeta {
-		i_2b txtr_id; //( Draw_Texture_ID  ) Номер текстуры
-		i_2b anim_id; //( Draw_Animated_ID ) Номер анимации
-		i_2b mesh_id; //( Draw_Command_ID  ) Номер модели 
-		i_2b inst_id; //( Draw_Instance_ID ) Номер инстанса
+		i_2b txtr_id; //( Draw_Texture_ID  ) ГЌГ®Г¬ГҐГ° ГІГҐГЄГ±ГІГіГ°Г»
+		i_2b anim_id; //( Draw_Animated_ID ) ГЌГ®Г¬ГҐГ° Г Г­ГЁГ¬Г Г¶ГЁГЁ
+		i_2b mesh_id; //( Draw_Command_ID  ) ГЌГ®Г¬ГҐГ° Г¬Г®Г¤ГҐГ«ГЁ 
+		i_2b inst_id; //( Draw_Instance_ID ) ГЌГ®Г¬ГҐГ° ГЁГ­Г±ГІГ Г­Г±Г 
 	};
 	struct SInstnOffSet {
 		enum WAYMASK : u_4b {
@@ -91,12 +91,12 @@ namespace mth {
 		i_4b ID_Material;
 		i_4b ID_Instance;
 	};
-	//Структура команды отрисовки DrawArraysIndirectCommand = 128_bit
+	//Г‘ГІГ°ГіГЄГІГіГ°Г  ГЄГ®Г¬Г Г­Г¤Г» Г®ГІГ°ГЁГ±Г®ГўГЄГЁ DrawArraysIndirectCommand = 128_bit
 	struct SDrawCommand {
-		u_4b vert_count;	// Количество вершин для примитива
-		u_4b inst_count;	// Количество инстансов
-		u_4b vert_first;	// Начальный индекс в вершинном массиве
-		u_4b inst_first;	// Базовый инстанс (добавляется к gl_InstanceID)
+		u_4b vert_count;	// ГЉГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГўГҐГ°ГёГЁГ­ Г¤Г«Гї ГЇГ°ГЁГ¬ГЁГІГЁГўГ 
+		u_4b inst_count;	// ГЉГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЁГ­Г±ГІГ Г­Г±Г®Гў
+		u_4b vert_first;	// ГЌГ Г·Г Г«ГјГ­Г»Г© ГЁГ­Г¤ГҐГЄГ± Гў ГўГҐГ°ГёГЁГ­Г­Г®Г¬ Г¬Г Г±Г±ГЁГўГҐ
+		u_4b inst_first;	// ГЃГ Г§Г®ГўГ»Г© ГЁГ­Г±ГІГ Г­Г± (Г¤Г®ГЎГ ГўГ«ГїГҐГІГ±Гї ГЄ gl_InstanceID)
 	};
 
 #ifdef MTH_ARR_QUEUE
