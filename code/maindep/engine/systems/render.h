@@ -670,6 +670,7 @@ __forceinline void emg::render::EraseInRenderPipline() {
 	i_4b& WorkCount = emg::Data.Render.count_work_group_;
 	i_4b& InstCount = emg::Data.Render.count_instaces_;
 	i_4b& CmndCount = emg::Data.Render.count_commands_;
+
 	if (InstCount <= 0) {
 		Logger.SetError("ERROR::[ logic.h ]: Del_active_essence_to_render()\n");
 		Logger.SetError("\temg_Render.count_instaces_ <= 0\n");
