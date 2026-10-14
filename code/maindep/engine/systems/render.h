@@ -649,14 +649,13 @@ __forceinline void emg::render::InserInRenderPipline() {
 	}
 	ToShow_EntyData.inst_id = static_cast<i_2b>(inst);
 	//-------------[ Add to attribute ]-------------
-	size_t bytes_to_move = (InstCount - inst);
-	if (bytes_to_move > 0) { 
-		std::memmove(&DRW_Attribs[inst + 1], &DRW_Attribs[inst], bytes_to_move << 5); 
+	i_8b bytes_to_move = (InstCount - inst) << 5;
+	if (bytes_to_move > 0) {
+		std::memmove(&DRW_Attribs[inst + 1], &DRW_Attribs[inst], bytes_to_move); 
 	}
+	DRW_Attribs[inst] = { 0 };
 	DRW_Attribs[inst].ID_Instance = ToShow_EntyData.inst_id;
 	DRW_Attribs[inst].ID_Material = ToShow_EntyData.txtr_id;
-	DRW_Attribs[inst].x = 0;
-	DRW_Attribs[inst].y = 0;
 	InstCount += 1;
 	WorkCount = (InstCount + 127) >> 7;
 	//----------------------------------------------
@@ -704,9 +703,11 @@ __forceinline void emg::render::EraseInRenderPipline() {
 		DRW_Commands[i].inst_first -= 1;
 	}
 	//-------------[ Del in attribute ]-------------
+	i_8b bytes_to_move = (InstCount - inst) << 5;
+	if (bytes_to_move > 0) {
+		std::memmove(&DRW_Attribs[inst], &DRW_Attribs[inst + 1], bytes_to_move);
+	}
 	InstCount -= 1;
-	size_t bytes_to_move = (InstCount - inst);
-	std::memcpy(&DRW_Attribs[inst], &DRW_Attribs[inst+1], bytes_to_move << 6);
 	WorkCount = (InstCount + 127) >> 7;
 	//----------------------------------------------
 	Update.store(true, std::memory_order_release);
