@@ -12,6 +12,32 @@ Use:
 	#define SPoint2u Point2D		// You can use any struct, if it have [x,y] freandly for [CDumbPather]
 	#include " [include_lib_directory] /dumbpather.h"
 
+
+	############################################################
+	use only binar map size if you use USE_DUMB_OPTIMIZATE_MAP!
+
+	CELL = one byte node
+
+			   - 8 7 6 5  4 3 2 1 -
+		CELL = [ 0 0 0 0  0 0 0 0 ]
+
+			1 2 3
+			4 * 5
+			6 7 8
+
+	CELL & 0b00000001 => cost of move to { y-1 , x-1 }
+	CELL & 0b00000010 => cost of move to { y-1 , x   }
+	CELL & 0b00000100 => cost of move to { y-1 , x+1 }
+	CELL & 0b00001000 => cost of move to {   y , x-1 }
+	CELL & 0b00010000 => cost of move to {   y , x+1 }
+	CELL & 0b00100000 => cost of move to { y+1 , x-1 }
+	CELL & 0b01000000 => cost of move to { y+1 , x   }
+	CELL & 0b10000000 => cost of move to { y+1 , x+1 }
+
+	#define USE_DUMB_OPTIMIZATE_MAP
+
+	#############################################################
+
 	struct Point2D{
 		u_2b x;
 		u_2b y;
@@ -39,22 +65,17 @@ Use:
  */
 #ifndef PATHFINDER_FOR_DUMBS_INCLUDE
 #define PATHFINDER_FOR_DUMBS_INCLUDE
-#define Active_OUTSTREAM(text) std::cout<< text << std::endl;
-#ifdef _CSTDLIB_
+#define Active_OUTSTREAM(text) //std::cout<< text << std::endl;
 
 #ifdef _MSC_VER
 #ifdef _DEBUG
 #ifdef DUMBPATHER_DBGOUT
 #define dbg_out(s) Active_OUTSTREAM(s)
-#define dbg_foo(foo) foo
 #else // !DUMBPATHER_DBGOUT
 #define dbg_out(s)
-#define dbg_foo(foo)
-#define dbg_prc(fnc, s)
 #endif // !DUMBPATHER_DBGOUT
 #else // !_DEBUG
 #define dbg_out(s)
-#define dbg_foo(foo)
 #pragma warning( disable : 4786 )	// Debugger truncating names.
 #pragma warning( disable : 4530 )	// Exception handler isn't used
 #endif // !_DEBUG
@@ -105,6 +126,16 @@ typedef double f_8b;
 
 #endif//DUMBPATHER_TYPES
 
+#ifdef USE_DUMB_OPTIMIZATE_MAP
+#include <functional>
+#include <array>
+#define DUMB_OPTIMIZE(declarate) declarate
+#define DUMB_UNOPTIMIZE(declarate)
+#else
+#define DUMB_OPTIMIZE(declarate)
+#define DUMB_UNOPTIMIZE(declarate) declarate
+#endif
+
 //Select SPoint2u - you can use any struct, if it have [x,y] freandly for [CDumbPather]
 #ifndef SPoint2u
 #define SPoint2u DumbPathrer_2bytes_2D_point
@@ -116,7 +147,9 @@ struct DumbPathrer_2bytes_2D_point {
 struct SPoint2u;
 #endif // !SPoint2u
 
+
 //Select adjacent cost mode :
+#ifndef USE_DUMB_OPTIMIZATE_MAP
 #ifdef DUMBPATHER_DEFAULT_FAST // FAST BLOK IS DEFAULT
 //=============================[    FAST BLOK IS DEFAULT   ]=============================
 #define SET_LINE_NEGIBORS(typ) if (stepX < map_size_)	{								\
@@ -146,7 +179,8 @@ struct SPoint2u;
 #define SET_DIAG_NEGIBORS(typ)	if (stepX < map_size_)	{								\
 	if (typ == TerrainType::WALKABLE) neighbors->PushBack({ FAST_DIAG, indx });			\
 	else if (typ == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_DIAG, indx });	}
-#endif // DUMBPATHER_DEFAULT_FAST
+#endif // AdjacentCost_foo_1
+#endif
 
 namespace pthfd {
 	//======================================================================
@@ -171,25 +205,26 @@ namespace pthfd {
 		CPathArray(const CPathArray& other) {
 			dbg_out("CALL COPY [ CPathArray ]");
 			this->length_ = other.length_;
-			this->Resize(this->length_);
+			this->Relloc(this->length_);
 			memcpy(this->array_, other.array_, other.length_ * sizeof(SPoint2u));
 		}
 		CPathArray(CPathArray&& other) noexcept {
 			dbg_out("CALL FORWARD [ CPathArray ]");
-			if (length_) delete[] array_;
 			this->array_ = other.array_;
 			other.array_ = nullptr;
 			this->length_ = other.length_;
 			other.length_ = 0;
 		}
 		CPathArray& operator=(const CPathArray& other) {
+			if (&other == this) return *this;
 			dbg_out("CALL [ = ] COPY [ CPathArray ]");
 			this->length_ = other.length_;
-			this->Resize(this->length_);
-			memcpy(this->array_, other.array_, other.length_ * sizeof(SPoint2u));
+			this->Relloc(this->length_);
+			memcpy(other.array_, this->array_, other.length_ * sizeof(SPoint2u));
 			return *this;
 		}
 		CPathArray& operator=(CPathArray&& other) noexcept {
+			if (&other == this) return *this;
 			dbg_out("CALL [ = ] FORWARD [ CPathArray ]");
 			if (length_) delete[] array_;
 			this->array_ = other.array_;
@@ -200,7 +235,7 @@ namespace pthfd {
 		}
 		__forceinline SPoint2u& operator[](u_4b i) { return array_[i]; }
 		__forceinline u_4b Length() const { return length_; }
-		__forceinline void Resize(u_4b array_length) {
+		__forceinline void Relloc(u_4b array_length) {
 			if (array_length == length_) return;
 			if (array_) delete[] array_;
 			if (!array_length) {
@@ -259,7 +294,7 @@ namespace pthfd {
 				capacity(0);
 			}
 			__forceinline void Clear() { m_size = 0; }	// see warning above
-			__forceinline void Resize(u_4b s) { capacity(s); m_size = s; }
+			__forceinline void Relloc(u_4b s) { capacity(s); m_size = s; }
 			__forceinline void PushBack(const T& t) noexcept { capacity(m_size + 1); m_buf[m_size++] = t; }
 			__forceinline u_4b Size() const { return m_size; }
 			__forceinline T& operator[](u_4b i) { return m_buf[i]; }
@@ -530,13 +565,13 @@ namespace pthfd {
 				const u_4b sz = heap_.Size();
 				if (sz > 1) {
 					CPathNode* last = heap_[sz - 1];
-					heap_.Resize(sz - 1);
+					heap_.Relloc(sz - 1);
 					heap_[0] = last;
 					last->heapIndex = 0;
 					SiftDown(0);
 				}
 				else {
-					heap_.Resize(0);
+					heap_.Relloc(0);
 				}
 				top->OpenFlag = 0;
 				top->heapIndex = MAXIMAL;
@@ -551,25 +586,102 @@ namespace pthfd {
 		u_4b total_cost_; // incremented with every solve, used to determine if cached data needs to be refreshed
 		u_4b map_size_;
 		i_1b** map_cells_;
+#ifdef USE_DUMB_OPTIMIZATE_MAP
+		u_4b map_binr_;
+		u_4b map_shft_Y_;
+		u_4b map_last_;
+		u_4b map_mask_X_;
 		//======================================================================
+		using NegiborsFunc = void(*)(u_4b& s, CVector<SStateCost>& n);
+		static void HX_XXX(u_4b& s, CVector<SStateCost>& n) {}
+		static void H1_001(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_LINE, s - 1 });
+		}
+		static void H1_010(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_LINE, s + 1 });
+		}
+		static void H1_011(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_LINE, s - 1 });
+			n.PushBack({ FAST_LINE, s + 1 });
+		}
+
+		static void H2_001(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_DIAG, s - 1 });
+		}
+		static void H2_010(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_LINE, s });
+		}
+		static void H2_100(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_DIAG, s + 1 });
+		}
+		static void H2_101(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_DIAG, s - 1 });
+			n.PushBack({ FAST_DIAG, s + 1 });
+		}
+		static void H2_011(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_DIAG, s - 1 });
+			n.PushBack({ FAST_LINE, s });
+		}
+		static void H2_110(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_LINE, s });
+			n.PushBack({ FAST_DIAG, s + 1 });
+		}
+		static void H2_111(u_4b& s, CVector<SStateCost>& n) {
+			n.PushBack({ FAST_DIAG, s - 1 });
+			n.PushBack({ FAST_LINE, s });
+			n.PushBack({ FAST_DIAG, s + 1 });
+		}
+		static constexpr NegiborsFunc NegiborsFunc_1[4] = {
+				HX_XXX, H1_001, H1_010, H1_011
+		};
+		static constexpr NegiborsFunc NegiborsFunc_2[8] = {
+				HX_XXX, H2_001, H2_010, H2_011,
+				H2_100, H2_101, H2_110, H2_111
+		};
+		//======================================================================
+		__forceinline void GetAdjacentCost(u_4b state, CVector<SStateCost>* neighbors) {
+			if (state > map_last_) return;
+			CVector<SStateCost>& neig = *neighbors;
+			i_1b& node_data = map_cells_[state >> map_shft_Y_][state & map_mask_X_];
+			i_1b node_jmp = (node_data >> 3) & 0b00000011;
+			NegiborsFunc_1[node_jmp](state, neig);
+			state -= map_size_;
+			node_jmp = node_data & 0b00000111;
+			NegiborsFunc_2[node_jmp](state, neig);
+			state += map_binr_;
+			node_jmp = (node_data >> 5) & 0b00000111;
+			NegiborsFunc_2[node_jmp](state, neig);
+		}
+		//======================================================================
+		__forceinline u_4b GetEstimateCost(u_4b stateStart, u_4b stateEnd) {
+			const u_4b sX = stateStart & map_mask_X_;
+			const u_4b sY = stateStart >> map_shft_Y_;
+			const u_4b eX = stateEnd & map_mask_X_;
+			const u_4b eY = stateEnd >> map_shft_Y_;
+			const u_4b dx = sX > eX ? sX - eX : eX - sX;
+			const u_4b dy = sY > eY ? sY - eY : eY - sY;
+			return (dx + dy) << 7;
+		}
+		//======================================================================
+#else
 		__forceinline u_4b GetEstimateCost(u_4b stateStart, u_4b stateEnd) {
 			u_4b sX = stateStart % map_size_;
 			stateStart = stateStart / map_size_;
 			u_4b eX = stateEnd % map_size_;
 			stateEnd = stateEnd / map_size_;
-			return ((stateStart > stateEnd ? stateStart - stateEnd : stateEnd - stateStart) +
+			return (
+				(stateStart > stateEnd ? stateStart - stateEnd : stateEnd - stateStart) +
 				(sX > eX ? sX - eX : eX - sX)) << 7;
 		}
 		__forceinline void GetAdjacentCost(u_4b state, CVector<SStateCost>* neighbors) {
 			//For some reason unknown to me, the compiler doesn't optimize this function if it contains a loop, so I unrolled the loop manually!
-
-			u_4b stepX, stepY, X = state % map_size_;
+			u_4b stepY, stepX, X = state % map_size_;
 			//----------------------------------------------------------------------
 			stepY = (state / map_size_) - 1;
 			if (stepY < map_size_) {
 				stepX = --X;
 				i_1b*& line = map_cells_[stepY];
-				u_4b indx = (map_size_ * stepY) + stepX;
+				u_4b indx = (state - map_size_) - 1;
 				SET_DIAG_NEGIBORS(line[stepX]);
 				++stepX;
 				++indx;
@@ -583,7 +695,7 @@ namespace pthfd {
 			if (stepY < map_size_) {
 				stepX = X;
 				i_1b*& line = map_cells_[stepY];
-				u_4b indx = (map_size_ * stepY) + stepX;
+				u_4b indx = state - 1;
 				SET_LINE_NEGIBORS(line[stepX]);
 				stepX += 2;
 				indx += 2;
@@ -594,7 +706,7 @@ namespace pthfd {
 			if (stepY < map_size_) {
 				stepX = X;
 				i_1b*& line = map_cells_[stepY];
-				u_4b indx = (map_size_ * stepY) + stepX;
+				u_4b indx = (state + map_size_) - 1;
 				SET_DIAG_NEGIBORS(line[stepX]);
 				++stepX;
 				++indx;
@@ -604,6 +716,8 @@ namespace pthfd {
 				SET_DIAG_NEGIBORS(line[stepX]);
 			}
 		}
+#endif
+
 		//======================================================================
 		__forceinline void Achieved(CPathNode* node, u_4b start, u_4b end, CVector<u_4b>* _path) {
 			CVector<u_4b>& path = *_path;
@@ -615,12 +729,12 @@ namespace pthfd {
 				it = it->parent;
 			}
 			if (count < 3) {
-				path.Resize(2);
+				path.Relloc(2);
 				path[0] = start;
 				path[1] = end;
 			}
 			else {
-				path.Resize(count);
+				path.Relloc(count);
 				path[0] = start;
 				path[count - 1] = end;
 				count -= 2;
@@ -634,12 +748,12 @@ namespace pthfd {
 		}
 		__forceinline void Environs(CPathNode* mpather_node, CVector<SNodeCost>* pNodeCost) {
 			if (mpather_node->numAdjacent == 0) {
-				pNodeCost->Resize(0);
+				pNodeCost->Relloc(0);
 			}
 			else if (mpather_node->cacheIndex < 0) {
-				statesCostVec_.Resize(0);
+				statesCostVec_.Relloc(0);
 				GetAdjacentCost(mpather_node->state, &statesCostVec_);
-				pNodeCost->Resize(statesCostVec_.Size());
+				pNodeCost->Relloc(statesCostVec_.Size());
 				mpather_node->numAdjacent = statesCostVec_.Size();
 				if (mpather_node->numAdjacent > 0) {
 					const u_4b stateCostVecSize = statesCostVec_.Size();
@@ -657,7 +771,7 @@ namespace pthfd {
 				}
 			}
 			else {
-				pNodeCost->Resize(mpather_node->numAdjacent);
+				pNodeCost->Relloc(mpather_node->numAdjacent);
 				SNodeCost* pNodeCostPtr = &(*pNodeCost)[0];
 				pathNodePool_.GetCache(mpather_node->cacheIndex, mpather_node->numAdjacent, pNodeCostPtr);
 				for (i_4b i = 0; i < mpather_node->numAdjacent; ++i) {
@@ -683,8 +797,8 @@ namespace pthfd {
 					GetEstimateCost(startNode, endNode), 0
 				)
 			);
-			statesCostVec_.Resize(0);
-			nodesCostVec_.Resize(0);
+			statesCostVec_.Relloc(0);
+			nodesCostVec_.Relloc(0);
 			while (!open.Empty()) {
 				node = open.Pop();
 				if (node->state == endNode) {
@@ -725,7 +839,6 @@ namespace pthfd {
 	public:
 		struct CacheStats final {
 			u_4b selfBytes;          // sizeof(CDumbPather)
-			u_4b costsVecBytes;      // sizeof(u_4b) * costsVec_.Size()
 			u_4b stateCostVecBytes;  // sizeof(StateCost) * statesCostVec_.Size()
 			u_4b nodeCostVecBytes;   // sizeof(NodeCost) * nodesCostVec_.Size()
 			u_4b poolCacheBytes;     // cache в CPathPool
@@ -738,6 +851,12 @@ namespace pthfd {
 			dbg_out("CALL DESTRUCTOR [ ~CDumbPather ]");
 		}
 		CDumbPather() : map_cells_(nullptr), map_size_(0), pathNodePool_(8), finder_frame_(0), total_cost_(0) {
+			DUMB_OPTIMIZE(
+				map_last_ = 0;
+			map_binr_ = 0;
+			map_mask_X_ = 0;
+			map_shft_Y_ = 0;
+				);
 			dbg_out("CALL CONSTRUCTOR [ CDumbPather ]");
 		}
 		CDumbPather(CDumbPather&&) = delete;
@@ -749,9 +868,9 @@ namespace pthfd {
 			dbg_out("=====================[  BEGIN FindPath()  ]=====================");
 			SPoint2u& start = path_points[0];
 			SPoint2u& end = path_points[1];
-			path_segments->Resize(0);
+			path_segments->Relloc(0);
 			Bool unvalid =
-				((end.y < map_size_ && end.x < map_size_) ? map_cells_[end.y][end.x] == TerrainType::BLOKABLE : true) &&
+				((end.y < map_size_ && end.x < map_size_) ? map_cells_[end.y][end.x] == TerrainType::BLOKABLE : true) ||
 				((start.y < map_size_ && start.x < map_size_) ? map_cells_[start.y][start.x] == TerrainType::BLOKABLE : true);
 			if (unvalid) {
 				dbg_out("=====================[ NOT_END FindPath() ]=====================");
@@ -763,7 +882,7 @@ namespace pthfd {
 			i_4b result = Search(frstNode, lastNode, &pathNodes);
 			if (result == IS_SOLVED) {
 				dbg_out("=====================[IS_SOLVED FindPath()]=====================");
-				path_segments->Resize(pathNodes.Size());
+				path_segments->Relloc(pathNodes.Size());
 				for (u_4b i = 0; i < path_segments->Length(); ++i) {
 					(*path_segments)[i] = SPoint2u{
 						static_cast<u_2b>(pathNodes[i] % map_size_),
@@ -779,6 +898,12 @@ namespace pthfd {
 			map_cells_ = map_data;
 			pathNodePool_.Clear();
 			finder_frame_ = 0;
+			DUMB_OPTIMIZE(
+				map_last_ = (map_size_ * map_size_) - 1;
+			map_binr_ = map_size_ << 1;
+			map_shft_Y_ = std::log2(map_size_);
+			map_mask_X_ = map_size_ - 1;
+				);
 			dbg_out("=====================[   END SetByteMap()  ]=====================");
 		}
 		__forceinline CacheStats GetCacheStats() const {
@@ -795,10 +920,11 @@ namespace pthfd {
 		}
 	};
 };
-#undef Active_OUTSTREAM
 #undef SET_LINE_NEGIBORS
 #undef SET_DIAG_NEGIBORS
+#undef RETURN_HERUINSTIC 
+#undef DUMB_UNOPTIMIZE 
+#undef DUMB_OPTIMIZE 
 #undef CACHBLOCK
 #undef MAXIMAL
-#endif // _CSTDLIB_
 #endif // PATHFINDER_FOR_DUMBS_INCLUDE

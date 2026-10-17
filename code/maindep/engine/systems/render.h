@@ -19,7 +19,6 @@
 #define Camera emg::Data.Render.Camera
 #define TEXTURES_LOAD_MODE 3
 
-
 #ifdef LOAD_CMD_STDOUT
 #define COUT_CMD(cout_cmd_procedure) cout_cmd_procedure
 #else

@@ -7,7 +7,7 @@
 	//#define OFFLINE_STDOUT
 	//#define EMG_ALLOC_STDOUT
 	//#define EMG_LOGIC_STDOUT
-	//#define EMG_LOGER_STDOUT
+	#define EMG_LOGER_STDOUT
 	//#define EMG_CUL_FACE_OFF
 	//#define LOAD_CMD_STDOUT
 	//#define DRAW_CMD_STDOUT
@@ -39,7 +39,7 @@
 #define GLM_FORCE_DEFAULT_ALIGNED	// Автовыравнивание для SIMD
 #define GLFW_INCLUDE_NONE			// Убираем сторонне подкулючение GLFW
 #define WIN32_LEAN_AND_MEAN			// Убирает редко используемые части Windows API
-#define DUMBPATHER_DEFAULT_FAST		// Поиск пути по умолчанию считает ячейку легкопроходимой
+#define USE_DUMB_OPTIMIZATE_MAP		// Поиск пути по умолчанию считает ячейку легкопроходимой
 #define SPoint2u mth::U2_2pos
 
 #ifdef EMG_ALLOC_STDOUT
@@ -180,6 +180,7 @@ namespace emg {
 				mth::SI2b_ArrQueue queue_add_to_draw_{};
 				mth::SI2b_ManagerList online_manager_list_{};
 				mth::SI2b_ForwardList online_list_{};
+				pthfd::CDumbPather PathManager;
 			} Logic;
 			struct {
 				c_wrd files_data_map_{};

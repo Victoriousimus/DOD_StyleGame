@@ -1,9 +1,9 @@
 
-#define TEST_FRAME_TIME 5000
 #include "maindep/engine.h"
 // битовае маски (N - 1), тоже что и x % N, где N - степень двойки
 #define MICRO_STEP 24	// ≈сли (frame_count % ONLINE_BITMASK) == 0, пробуждаем поток данных в кадре(звук, активна€ логика)
 #define MACRO_STEP 255	// ≈сли (frame_count % SOUNDS_BITMASK) == 0, пробуждаем мировой поток
+#define TEST_FRAME_TIME 5000
 #ifdef TEST_FRAME_TIME
 #define TEST_FRAME_FUNC(frame_func) frame_func
 #else
