@@ -7,8 +7,8 @@
 #define COUT_EMG_LOGIC(cout_procedure) ;
 #endif // EMG_LOGIC_STDOUT
 
-#define ToDraw(eIndex_to_draw) emg::Data.Logic.queue_add_to_draw_.psh(eIndex_to_draw)
-#define CORRECT_STEP(position) position > WORLD_SIZE-2? 1: position
+#define ToDraw(eIndex_to_draw) emg::Data.Logic.queue_add_to_draw_.psh((eIndex_to_draw))
+#define CORRECT_STEP(position) (position) > WORLD_SIZE-2? 1: (position)
 
 __forceinline void emg::logics::WorldMamagerTic() {
 	lgc::classes::CWorld& world = *static_cast<lgc::classes::CWorld*>(WorldVaribles.wrl);

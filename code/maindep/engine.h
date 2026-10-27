@@ -7,7 +7,7 @@
 	//#define OFFLINE_STDOUT
 	//#define EMG_ALLOC_STDOUT
 	//#define EMG_LOGIC_STDOUT
-	#define EMG_LOGER_STDOUT
+	//#define EMG_LOGER_STDOUT
 	//#define EMG_CUL_FACE_OFF
 	//#define LOAD_CMD_STDOUT
 	//#define DRAW_CMD_STDOUT
@@ -74,15 +74,16 @@
 #include "engine/share/thrd.h"	//namespace thrd
 #include "engine/share/path.h"	//namespace thrd
 
-#define SLP_THRD(a) std::this_thread::sleep_for(std::chrono::milliseconds(a)) // Поток засыпает на (а) миллисекунд
+#define SLP_THRD(a) std::this_thread::sleep_for(std::chrono::milliseconds((a))) // Поток засыпает на (а) миллисекунд
 
 #define KEYS_LIMIT 256
 #define CHUNK_SIZE 16
 #define WORLD_SIZE   64	 // 10 bit <- use xy 2 byte WORLD_POS
 #define REGION_SIZE  64	 //  6 bit <- use xy 2 byte WORLD_POS
 #define TERRAIN_SIZE 128 // DRAW_POS
-#define TEXTUR_LIMIT 32//Тектсутры
-#define MODELS_LIMIT 32//Модели
+#define TEXTUR_LIMIT 4//Тектсутры
+#define REGION_LIMIT 16//Ландшафт
+#define MODELS_LIMIT 32//Сущности
 #define ONLINE_LIMIT 32//Экземпляры
 #define ENTITY_LIMIT 128//32768//Сущности
 #define BEHEVIOR_PARAMS 8
@@ -96,12 +97,26 @@
 #define EMG_INPUT_UP 5
 #define EMG_INPUT_DOWN 6
 
+#if REGION_LIMIT < 9
+	using RegionFlagType = u_1b;
+#elif REGION_LIMIT < 17
+	using RegionFlagType = u_2b;
+#elif REGION_LIMIT < 33
+	using RegionFlagType = u_4b;
+#else
+	using RegionFlagType = u_8b;
+#endif
+
 namespace emg {
 	struct {//  LIMIT: 12 544 / 1 073 741 824 bytes
 		public:
 			struct { //render;
 				mth::SInstnAttrib InstnAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
 				mth::SDrawCommand DrawCommands_[MODELS_LIMIT]{};	// Массив комманд
+				struct {
+					RegionFlagType FreeRegionsFlags{ 0 };
+					mth::U2_2pos DrawableRegionsPos[REGION_LIMIT]{};
+				} DrawRegion;
 				struct {
 					u_4b textures_index_[TEXTUR_LIMIT];	// ID текстурного буфера
 					u_4b index_VAO_{};				// Индекс вершинного массива
@@ -199,8 +214,8 @@ namespace emg {
 		__forceinline extern void Init();
 		__forceinline extern void Exit();
 		__forceinline extern void CreateFrame();
-		__forceinline extern void InserInRenderPipline();
-		__forceinline extern void EraseInRenderPipline();
+		__forceinline extern void InsertInDrawPipline();
+		__forceinline extern void RemoveInDrawPipline();
 	}
 	namespace logics {
 		__forceinline extern void Init();

@@ -9,9 +9,9 @@
 #define MTH_RADIANS 6.2831853f	//×èñëî 2 * PI
 #define MTH_MIN_ANG_Y -1.57075f	//×èñëî -PI/2
 #define MTH_MAX_ANG_Y  1.57075f	//×èñëî  PI/2
-#define MTH_ANG360(ang) ((int)ang % 360) + (ang - (int)ang)					//Ïðèâåäåíèå ãðàäóèðîâàííîãî óãëà
-#define MTH_ANGRAD(ang) (f_4b)((int)(ang*10000000) % 62831853)/10000000.0f	//Ïðèâåäåíèå ðàäèàëüíîãî óãëà
-#define MTH_ADDRAD(ang) ang += (ang < 0 ? SPT_RADIANS : (ang >= SPT_RADIANS ? -SPT_RADIANS : 0.01f));
+#define MTH_ANG360(ang) ((int)(ang) % 360) + ((ang) - (int)(ang))					//Ïðèâåäåíèå ãðàäóèðîâàííîãî óãëà
+#define MTH_ANGRAD(ang) (f_4b)((int)((ang)*10000000) % 62831853)/10000000.0f	//Ïðèâåäåíèå ðàäèàëüíîãî óãëà
+#define MTH_ADDRAD(ang) (ang) += ((ang) < 0 ? SPT_RADIANS : ((ang) >= SPT_RADIANS ? -SPT_RADIANS : 0.01f));
 
 typedef void* PMem;
 typedef const char* c_wrd;

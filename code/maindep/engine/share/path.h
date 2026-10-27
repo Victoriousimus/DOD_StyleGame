@@ -153,32 +153,32 @@ struct SPoint2u;
 #ifdef DUMBPATHER_DEFAULT_FAST // FAST BLOK IS DEFAULT
 //=============================[    FAST BLOK IS DEFAULT   ]=============================
 #define SET_LINE_NEGIBORS(typ) if (stepX < map_size_)	{								\
-		if ((typ != TerrainType::BLOKABLE))												\
-			if (typ == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_LINE, indx });	\
+		if (((typ) != TerrainType::BLOKABLE))												\
+			if ((typ) == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_LINE, indx });	\
 			else neighbors->PushBack({ FAST_LINE, indx });								}
 #define SET_DIAG_NEGIBORS(typ) if (stepX < map_size_)	{								\
-		if ((typ != TerrainType::BLOKABLE))												\
-			if (typ == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_DIAG, indx });	\
+		if (((typ) != TerrainType::BLOKABLE))												\
+			if ((typ) == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_DIAG, indx });	\
 			else neighbors->PushBack({ FAST_DIAG, indx });								}
 #else
 #ifdef DUMBPATHER_DEFAULT_SLOW
 //=============================[    SLOW BLOK IS DEFAULT   ]=============================
 #define SET_LINE_NEGIBORS(typ)	if (stepX < map_size_)	{								\
-		if ((typ != TerrainType::BLOKABLE))												\
-			if (typ == TerrainType::WALKABLE) neighbors->PushBack({ FAST_LINE, indx });	\
+		if (((typ) != TerrainType::BLOKABLE))												\
+			if ((typ) == TerrainType::WALKABLE) neighbors->PushBack({ FAST_LINE, indx });	\
 			else neighbors->PushBack({ SLOW_LINE, indx });								}
 #define SET_DIAG_NEGIBORS(typ)	if (stepX < map_size_)	{								\
-		if ((typ != TerrainType::BLOKABLE))												\
-			if (typ == TerrainType::WALKABLE) neighbors->PushBack({ FAST_DIAG, indx });	\
+		if (((typ) != TerrainType::BLOKABLE))												\
+			if ((typ) == TerrainType::WALKABLE) neighbors->PushBack({ FAST_DIAG, indx });	\
 			else neighbors->PushBack({ SLOW_DIAG, indx });								}
 #endif
 //=============================[ UNWOKABLE BLOK IS DEFAULT ]=============================
 #define SET_LINE_NEGIBORS(typ)	if (stepX < map_size_)	{								\
-	if (typ == TerrainType::WALKABLE) neighbors->PushBack({ FAST_LINE, indx });			\
-	else if (typ == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_LINE, indx });	}
+	if ((typ) == TerrainType::WALKABLE) neighbors->PushBack({ FAST_LINE, indx });			\
+	else if ((typ) == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_LINE, indx });	}
 #define SET_DIAG_NEGIBORS(typ)	if (stepX < map_size_)	{								\
-	if (typ == TerrainType::WALKABLE) neighbors->PushBack({ FAST_DIAG, indx });			\
-	else if (typ == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_DIAG, indx });	}
+	if ((typ) == TerrainType::WALKABLE) neighbors->PushBack({ FAST_DIAG, indx });			\
+	else if ((typ) == TerrainType::SLOWABLE) neighbors->PushBack({ SLOW_DIAG, indx });	}
 #endif // AdjacentCost_foo_1
 #endif
 
