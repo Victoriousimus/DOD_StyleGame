@@ -78,7 +78,7 @@ public:
 #undef t_Flag_
 #undef t_Thrd_
 #undef t_Mutx_
-#undef COUT_THREAD(thread_out_procedure);
-#undef COUT_ALLOC(thread_out_procedure);
+#undef COUT_THREAD
+#undef COUT_ALLOC
 
 #endif

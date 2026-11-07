@@ -10,11 +10,11 @@ struct TransformData {
     float posY;
     float posZ;
 	int ID_Material;//UnUseNow
-	int ID_Instance;//UnUseNow
+	int ID_Instsance;//UnUseNow
 };
 
 layout(std430, binding = 1) readonly buffer TransformInputBuffer {
-    TransformData inst[];
+    TransformData InstAttribs[];
 };
 layout(std430, binding = 3) buffer CompMatrixBuffer {
     mat4 modelCompMatrices[];
@@ -23,8 +23,8 @@ layout(std430, binding = 3) buffer CompMatrixBuffer {
 void main() {
 	if (gl_GlobalInvocationID.x >= modelCompMatrices.length()) return;
 	uint index = gl_GlobalInvocationID.x;
-	vec3 pos = vec3(inst[index].posX, inst[index].posY, inst[index].posZ);
-	vec3 ang = vec3(inst[index].rotX, inst[index].rotY, inst[index].rotZ);
+	vec3 pos = vec3(InstAttribs[index].posX, InstAttribs[index].posY, InstAttribs[index].posZ);
+	vec3 ang = vec3(InstAttribs[index].rotX, InstAttribs[index].rotY, InstAttribs[index].rotZ);
 	vec3 c = cos(ang);
 	vec3 s = sin(ang);
 	float sY_sX = s.y * s.x;

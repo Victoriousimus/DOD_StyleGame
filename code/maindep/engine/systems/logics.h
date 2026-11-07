@@ -109,14 +109,14 @@ namespace lgc {
 #include "logical/classes/CWorld.h"
 
 
-#define Enty_DRW emg::Data.Logic.unit_visual_data_ //Данные о перемещении оффлайн
-#define Enty_POS emg::Data.Logic.unit_global_step_ //Данные о перемещении оффлайн
+#define Enty_DRW emg::Data.Logic.unit_visual_data_
+#define Enty_POS emg::Data.Logic.unit_global_step_
 #define Enty_Curs emg::Data.Logic.online_manager_list_
 #define Enty_List emg::Data.Logic.online_list_
 
 struct {
 	img::CStbImg img;
-	lgc::IWorld* wrl;
+	lgc::IWorld* wrl{0};
 	void Init() {
 		wrl = new lgc::classes::CWorld();
 	}

@@ -21,6 +21,6 @@ __forceinline void emg::logics::WorldMamagerTic() {
 
 #undef ToDraw
 #undef CORRECT_STEP
-#undef COUT_EMG_LOGIC(cout_procedure)
+#undef COUT_EMG_LOGIC
 
 #endif //MY_LIB_OFFLINE_LOGICS_REALISATION

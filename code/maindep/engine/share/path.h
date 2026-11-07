@@ -899,10 +899,10 @@ namespace pthfd {
 			pathNodePool_.Clear();
 			finder_frame_ = 0;
 			DUMB_OPTIMIZE(
-				map_last_ = (map_size_ * map_size_) - 1;
-			map_binr_ = map_size_ << 1;
-			map_shft_Y_ = std::log2(map_size_);
-			map_mask_X_ = map_size_ - 1;
+					map_last_ = (map_size_ * map_size_) - 1;
+					map_binr_ = map_size_ << 1;
+					map_shft_Y_ = static_cast<u_4b>(std::log2(map_size_));
+					map_mask_X_ = map_size_ - 1;
 				);
 			dbg_out("=====================[   END SetByteMap()  ]=====================");
 		}

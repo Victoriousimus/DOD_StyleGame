@@ -100,6 +100,14 @@
 #define EMG_INPUT_UP 5
 #define EMG_INPUT_DOWN 6
 
+#define Shader_Layout_VERT_POS 0
+#define Shader_Layout_VERT_NRM 1
+#define Shader_Layout_VERT_TEX 2
+#define Shader_Layout_SPACE 0
+#define Shader_Layout_ATTRB 1
+#define Shader_Layout_OFFST 2
+#define Shader_Layout_MTRIX 3
+
 #if REGION_BUFFER_COUNT < 9
 	using RegionFlagType = u_1b;
 #elif REGION_BUFFER_COUNT < 17
@@ -130,12 +138,13 @@ namespace emg {
 					//+++++++++++++++++++++[REGION]+++++++++++++++++++++
 					PMem DrawRegionCommands_refc_{};	// &< Указатель на память (GPU) массива команд 
 					PMem DrawRegionOffsets_refc_{};		// &< Указатель на память (GPU) массива атрибутов
+					PMem DrawRegionVertexs_refc_{};		// &< Указатель на память (GPU) массива атрибутов
 					u_4b index_regions_VAO_{};			// Индекс вершинного массива моделей местности
 					u_4b index_regions_VBO_{};			// Индекс вершинного буффера моделей местности
 					u_4b index_regions_command_{};		// Индекс массива комманд
 					u_4b index_regions_offsets_{};		// Индекс массива аттрибутов в шейдере
 					//+++++++++++++++++++++[OTHRES]+++++++++++++++++++++
-					u_4b textures_index_[TEXTUR_LIMIT];	// ID текстурного буфера
+					u_4b textures_index_[TEXTUR_LIMIT]{};	// ID текстурного буфера
 					u_4b index_camera_UBO_{};			// Индекс матрицы пространства(камеры) в шейдере
 					u_4b index_compute_shader_{};		// Индекс шейдера расчетов
 					u_4b index_draw_region_shader_{};	// Индекс шейдера отрисовки местности

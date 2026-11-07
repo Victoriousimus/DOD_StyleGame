@@ -90,5 +90,5 @@ struct {
 	}
 } Logger;
 
-#undef DBG_EMG_LOGER_STDOUT(cout_this)
+#undef DBG_EMG_LOGER_STDOUT
 #endif // MY_LIB_ERROR_STRUCT
