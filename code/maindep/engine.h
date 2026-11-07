@@ -136,9 +136,9 @@ namespace emg {
 					u_4b index_attribs_inderect_{};		// »ндекс массива аттрибутов в шейдере
 					u_4b index_matrixs_inderect_{};		// »ндекс массива модельных матриц в шейдере
 					//+++++++++++++++++++++[REGION]+++++++++++++++++++++
-					PMem DrawRegionCommands_refc_{};	// &< ”казатель на пам€ть (GPU) массива команд 
-					PMem DrawRegionOffsets_refc_{};		// &< ”казатель на пам€ть (GPU) массива атрибутов
-					PMem DrawRegionVertexs_refc_{};		// &< ”казатель на пам€ть (GPU) массива атрибутов
+					PMem DrawRegionCommands_refc_{};	// &< ”казатель на пам€ть (GPU) массива команд
+					PMem DrawRegionOffsets_refc_{};		// &< ”казатель на пам€ть (GPU) массива смещений
+					PMem DrawRegionVertexs_refc_{};		// &< ”казатель на пам€ть (GPU) массива вершин
 					u_4b index_regions_VAO_{};			// »ндекс вершинного массива моделей местности
 					u_4b index_regions_VBO_{};			// »ндекс вершинного буффера моделей местности
 					u_4b index_regions_command_{};		// »ндекс массива комманд
