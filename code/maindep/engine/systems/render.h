@@ -611,7 +611,31 @@ __forceinline void emg::render::Exit() {
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	glUseProgram(NULL);
 	glFinish();
-	// Отчистка ресурсов
+	// Отчистка ресурсов    
+	if (emg_Buffer.DrawModelsAttribut_refc_) {
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_attribs_inderect_);
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		emg_Buffer.DrawModelsAttribut_refc_ = nullptr;
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+	}
+	if (emg_Buffer.DrawModelsCommands_refc_) {
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_comands_inderect_);
+		glUnmapBuffer(GL_DRAW_INDIRECT_BUFFER);
+		emg_Buffer.DrawModelsCommands_refc_ = nullptr;
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+	}
+	if (emg_Buffer.DrawRegionOffsets_refc_) {
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_regions_offsets_);
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		emg_Buffer.DrawRegionOffsets_refc_ = nullptr;
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+	}
+	if (emg_Buffer.DrawRegionCommands_refc_) {
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_regions_command_);
+		glUnmapBuffer(GL_DRAW_INDIRECT_BUFFER);
+		emg_Buffer.DrawRegionCommands_refc_ = nullptr;
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+	}
 	glDeleteVertexArrays(1, &emg_Buffer.index_meshes_VAO_);
 	glDeleteBuffers(1, &emg_Buffer.index_meshes_VBO_);
 	glDeleteBuffers(1, &emg_Buffer.index_comands_inderect_);
