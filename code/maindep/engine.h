@@ -81,12 +81,15 @@
 #define WORLD_SIZE   64	 // 10 bit <- use xy 2 byte WORLD_POS
 #define REGION_SIZE  64	 //  6 bit <- use xy 2 byte WORLD_POS
 #define TERRAIN_SIZE 128 // DRAW_POS
-#define TEXTUR_LIMIT 4//Тектсутры
-#define REGION_LIMIT 16//Ландшафт
+#define TEXTUR_LIMIT 2//Тектсутры
 #define MODELS_LIMIT 32//Сущности
 #define ONLINE_LIMIT 32//Экземпляры
 #define ENTITY_LIMIT 128//32768//Сущности
 #define BEHEVIOR_PARAMS 8
+#define REGION_DRAWS_COUNT 9u	//Ландшафт в отрисовке
+#define REGION_BUFFER_COUNT 14u	//Ландшафт в буфере
+#define REGION_VERTEX_SIZE 65536u//Ландшафт
+#define ALL_REGION_VERTEX_DATA REGION_VERTEX_SIZE * REGION_BUFFER_COUNT * 8u
 
 //ИНДЕКСЫ КОДОВ КЛАВИШ
 #define EMG_INPUT_EXIT 0
@@ -97,11 +100,11 @@
 #define EMG_INPUT_UP 5
 #define EMG_INPUT_DOWN 6
 
-#if REGION_LIMIT < 9
+#if REGION_BUFFER_COUNT < 9
 	using RegionFlagType = u_1b;
-#elif REGION_LIMIT < 17
+#elif REGION_BUFFER_COUNT < 17
 	using RegionFlagType = u_2b;
-#elif REGION_LIMIT < 33
+#elif REGION_BUFFER_COUNT < 33
 	using RegionFlagType = u_4b;
 #else
 	using RegionFlagType = u_8b;
@@ -113,20 +116,30 @@ namespace emg {
 			struct { //render;
 				mth::SInstnAttrib InstnAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
 				mth::SDrawCommand DrawCommands_[MODELS_LIMIT]{};	// Массив комманд
+				mth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};
+				mth::SDrawCommand RegionCommands_[REGION_BUFFER_COUNT]{};	// Массив комманд
 				struct {
-					RegionFlagType FreeRegionsFlags{ 0 };
-					mth::U2_2pos DrawableRegionsPos[REGION_LIMIT]{};
-				} DrawRegion;
-				struct {
+					//+++++++++++++++++++++[MODELS]+++++++++++++++++++++
+					PMem DrawModelsCommands_refc_{};	// &< Указатель на память (GPU) массива команд 
+					PMem DrawModelsAttribut_refc_{};	// &< Указатель на память (GPU) массива атрибутов
+					u_4b index_meshes_VAO_{};			// Индекс вершинного массива моделей объектов
+					u_4b index_meshes_VBO_{};			// Индекс вершинного буффера моделей объектов
+					u_4b index_comands_inderect_{};		// Индекс массива комманд
+					u_4b index_attribs_inderect_{};		// Индекс массива аттрибутов в шейдере
+					u_4b index_matrixs_inderect_{};		// Индекс массива модельных матриц в шейдере
+					//+++++++++++++++++++++[REGION]+++++++++++++++++++++
+					PMem DrawRegionCommands_refc_{};	// &< Указатель на память (GPU) массива команд 
+					PMem DrawRegionOffsets_refc_{};		// &< Указатель на память (GPU) массива атрибутов
+					u_4b index_regions_VAO_{};			// Индекс вершинного массива моделей местности
+					u_4b index_regions_VBO_{};			// Индекс вершинного буффера моделей местности
+					u_4b index_regions_command_{};		// Индекс массива комманд
+					u_4b index_regions_offsets_{};		// Индекс массива аттрибутов в шейдере
+					//+++++++++++++++++++++[OTHRES]+++++++++++++++++++++
 					u_4b textures_index_[TEXTUR_LIMIT];	// ID текстурного буфера
-					u_4b index_VAO_{};				// Индекс вершинного массива
-					u_4b index_VBO_{};				// Индекс вершинного буффера
-					u_4b index_UBO_{};				// Индекс матрицы пространства(камеры) в шейдере
-					u_4b index_comands_inderect_{};	// Индекс массива комманд
-					u_4b index_attribs_inderect_{};	// Индекс массива аттрибутов в шейдере
-					u_4b index_matrixs_inderect_{};	// Индекс массива модельных матриц в шейдере
-					u_4b index_compute_shader_{};	// Индекс шейдера расчетов
-					u_4b index_drawind_shader_{};	// Индекс шейдера отрисовки
+					u_4b index_camera_UBO_{};			// Индекс матрицы пространства(камеры) в шейдере
+					u_4b index_compute_shader_{};		// Индекс шейдера расчетов
+					u_4b index_draw_region_shader_{};	// Индекс шейдера отрисовки местности
+					u_4b index_draw_models_shader_{};	// Индекс шейдера отрисовки моделей
 				} GPU;
 				struct {//Камера
 					m4_64b projection_matrix_{};// Матрица проекции
@@ -140,16 +153,14 @@ namespace emg {
 					f_4b near_{};	//Плоскость отсечения
 					f_4b fov_{};	//Угол обора
 				} Camera;
-				PMem  DrawCommands_refc_{};	//Быстрая ссылка на матрицу Пространства
-				PMem  DrawAttribut_refc_{};	//Быстрая ссылка на матрицу Пространства
-				f_4b* ViewMatrix_refc_{};	//Быстрая ссылка на матрицу Пространства
+				f_4b* ViewMatrix_refc_{};	//Быстрая ссылка на матрицу Пространства (оперативная память)
 				i_4b  ViewMatrix_size_{};	//Размер матрицы Пространства
-				i_4b count_texutres_{};		// Количество текстур и атласов
-				i_4b count_instaces_{};		// Количество инстансов в кадре
-				i_4b count_commands_{};		// Количество команд отрисовки
+				i_4b count_texutres_{};		//Количество текстур и атласов
+				i_4b count_instaces_{};		//Количество инстансов в кадре
+				i_4b count_commands_{};		//Количество команд отрисовки
 				i_4b count_work_group_{};	//Количество рабочих групп в шейдере
-				u_2b essence_add_to_show_id_{};
-				u_2b essence_add_to_hide_id_{};
+				u_2b essence_add_to_show_id_{};	//Индекс объекта для добавления в рендер
+				u_2b essence_add_to_hide_id_{};	//Индекс объекта для удаления из рендера
 				std::atomic<Bool> draw_command_update_{};	// Массив команд отрисовки изменен
 				std::atomic<Bool> draw_command_is_free_{};	// Массив команд отрисовки доступен
 			} Render;
@@ -223,29 +234,6 @@ namespace emg {
 		__forceinline extern void WorldMamagerTic();
 		__forceinline extern void LocalManagerTic();
 	}
-
-
-	namespace iofile {
-		enum FILES_TYPE : u_1b {
-			COMP_SHADER,
-			VERT_SHADER,
-			FRAG_SHADER,
-			ATLS_TEXTUR,
-			MESH_STRUCT
-		};
-		struct ShaderLoadedData {
-			t_wrd text{ nullptr };
-		};
-		struct TexturLoadedData {
-			t_wrd text{ nullptr };
-		};
-		struct MeshLoadetData {
-			mth::SDrawCommand* DrawCmd{ nullptr };
-			f_4b* Vrtx{ nullptr };
-		};
-		__forceinline extern void Init();
-		__forceinline extern PMem Load(emg::iofile::FILES_TYPE fType);
-	}
 	namespace sounds {
 	}
 }
@@ -254,6 +242,6 @@ namespace emg {
 #include "engine/systems/render.h"
 #include "engine/systems/sounds.h"
 #include "engine/systems/logics.h"
-#include "engine/systems/iofile.h"
+//#include "engine/systems/iofile.h" - пока-что упраздним, потом подумаем
 
 #endif //SIMPLE_ENGINE_FOR_GAME_LIBS

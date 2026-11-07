@@ -7,6 +7,8 @@
 #define CHECK_6_SYMBOLS_cmp(word) CHECK_3_FIRST( (word), 'c', 'm', 'p') && CHECK_3_LAST( (word) )
 #define CHECK_6_SYMBOLS_frg(word) CHECK_3_FIRST( (word), 'f', 'r', 'g') && CHECK_3_LAST( (word) )
 #define CHECK_6_SYMBOLS_vrt(word) CHECK_3_FIRST( (word), 'v', 'r', 't') && CHECK_3_LAST( (word) )
+#define CHECK_6_SYMBOLS_rvt(word) CHECK_3_FIRST( (word), 'r', 'v', 't') && CHECK_3_LAST( (word) )
+#define CHECK_6_SYMBOLS_rfg(word) CHECK_3_FIRST( (word), 'r', 'f', 'g') && CHECK_3_LAST( (word) )
 #define CHECK_6_SYMBOLS_msh(word) CHECK_3_FIRST( (word), 'm', 's', 'h') && CHECK_3_LAST( (word) )
 #define CHECK_6_SYMBOLS_atl(word) CHECK_3_FIRST( (word), 'a', 't', 'l') && CHECK_3_LAST( (word) )
 #define CHECK_6_SYMBOLS_map(word) CHECK_3_FIRST( (word), 'm', 'a', 'p') && CHECK_3_LAST( (word) )
@@ -14,6 +16,7 @@
 #define emg_Inputs emg::Data.Window.Input
 #define emg_Window emg::Data.Window.Params
 #define emg_Render emg::Data.Render
+#define emg_Region emg::Data.Render.DrawRegion
 #define emg_Buffer emg::Data.Render.GPU
 
 #define emg_CMD emg::Data.Render.DrawCommands_
@@ -27,6 +30,19 @@
 #define COUT_CMD(cout_cmd_procedure)
 #endif
 
+struct SLoadingShaders {
+	u_4b models_VertShader;
+	u_4b models_FragShader;
+	u_4b region_VertShader;
+	u_4b region_FragShader;
+	u_4b compute_Shader;
+	i_4b success_loading;
+};
+
+// загрузка региона
+__forceinline void upload_region(i_4b slot, PMem data, u_8b bytes) {
+	//glNamedBufferSubData(emg_Region.index_meshes_VBO_, slot * REGION_VERTEX_SIZE, bytes, data);
+}
 // Обновление массива атрибутов
 __forceinline void Interpolation_Draw_Attributes() {
 	for (i_4b i = 0; i < emg_Render.count_instaces_; ++i) {
@@ -63,11 +79,9 @@ __forceinline void scene_update_camera() {
 		Camera.postn_.x -= Camera.velocity_ * Camera.ang_front_.z;
 		Camera.postn_.z += Camera.velocity_ * Camera.ang_front_.x;
 	}
-	
 	// Вверх / Вниз
 	if (emg_Inputs.key_flags_[EMG_INPUT_UP])   Camera.postn_.y += Camera.velocity_; //Z
 	if (emg_Inputs.key_flags_[EMG_INPUT_DOWN]) Camera.postn_.y -= Camera.velocity_; //X
-
 	//Обновим матрицу вида
 	Camera.ang_front_.y = cosf(Camera.angle_.y);
 	Camera.ang_front_.x *= Camera.ang_front_.y;
@@ -79,11 +93,13 @@ __forceinline void scene_update_camera() {
 }
 
 //Загрузка шейдерных программ
-__forceinline void load_saheder_progs(u_4b* comp_Shader, u_4b* vert_Shader, u_4b* frag_Shader, i_4b* shader_success) {
-	u_4b& compShader = *comp_Shader;
-	u_4b& vertShader = *vert_Shader;
-	u_4b& fragShader = *frag_Shader;
-	i_4b& success = *shader_success;
+__forceinline void load_saheder_progs(SLoadingShaders* SLoadingShaders) {
+	u_4b& shdr_Cmp = SLoadingShaders->compute_Shader;
+	u_4b& shdr_m_Vrt = SLoadingShaders->models_VertShader;
+	u_4b& shdr_m_Frg = SLoadingShaders->models_FragShader;
+	u_4b& shdr_r_Vrt = SLoadingShaders->region_VertShader;
+	u_4b& shdr_r_Frg = SLoadingShaders->region_FragShader;
+	i_4b& success = SLoadingShaders->success_loading;
 	u_8b lengt_accum = 0;
 	t_wrd sahderName{ nullptr };
 	t_wrd fileText{ nullptr };
@@ -103,28 +119,42 @@ __forceinline void load_saheder_progs(u_4b* comp_Shader, u_4b* vert_Shader, u_4b
 		//Проверяем тэги в поисках интересующего символа
 		if (CHECK_6_SYMBOLS_cmp(fileText)) {
 			shader_type = GL_COMPUTE_SHADER;
-			shader_ref = &compShader;
+			shader_ref = &shdr_Cmp;
 		}
 		else
 		if (CHECK_6_SYMBOLS_frg(fileText)) {
 			shader_type = GL_FRAGMENT_SHADER;
-			shader_ref = &fragShader;
+			shader_ref = &shdr_m_Frg;
 		}
 		else
 		if (CHECK_6_SYMBOLS_vrt(fileText)) {
 			shader_type = GL_VERTEX_SHADER;
-			shader_ref = &vertShader;
+			shader_ref = &shdr_m_Vrt;
+		}
+		else
+		if (CHECK_6_SYMBOLS_rfg(fileText)) {
+			shader_type = GL_FRAGMENT_SHADER;
+			shader_ref = &shdr_r_Frg;
+		}
+		else
+		if (CHECK_6_SYMBOLS_rvt(fileText)) {
+			shader_type = GL_VERTEX_SHADER;
+			shader_ref = &shdr_r_Vrt;
 		}
 		else continue;
 		//если символ шейдера найден, записываем его название
 		sahderName = static_cast<t_wrd>(malloc(64));
 		if (!sahderName) {
-			if (shader_type == GL_COMPUTE_SHADER)
+			if (shader_ref == &shdr_Cmp)
 				Logger.SetError("ERROR::[ render.h ]: load_prog_to_GPU(): cmp:= : sahderName = malloc(64)\n");
-			if (shader_type == GL_FRAGMENT_SHADER)
+			if (shader_ref == &shdr_m_Frg)
 				Logger.SetError("ERROR::[ render.h ]: load_prog_to_GPU(): frg:= : sahderName = malloc(64)\n");
-			if (shader_type == GL_VERTEX_SHADER)
+			if (shader_ref == &shdr_m_Vrt)
 				Logger.SetError("ERROR::[ render.h ]: load_prog_to_GPU(): vrt:= : sahderName = malloc(64)\n");
+			if (shader_ref == &shdr_r_Frg)
+				Logger.SetError("ERROR::[ render.h ]: load_prog_to_GPU(): rfg:= : sahderName = malloc(64)\n");
+			if (shader_ref == &shdr_r_Vrt)
+				Logger.SetError("ERROR::[ render.h ]: load_prog_to_GPU(): rvt:= : sahderName = malloc(64)\n");
 			return;
 		}
 		for (j = 0, i += 6; i < lengt_accum; ++i, ++j) {
@@ -147,9 +177,11 @@ __forceinline void load_saheder_progs(u_4b* comp_Shader, u_4b* vert_Shader, u_4b
 			Logger.SetError(sahderName);
 			Logger.SetError(" ]\n");
 			Logger.SetError(infoLog);
-			if (compShader) glDeleteShader(compShader);
-			if (vertShader) glDeleteShader(vertShader);
-			if (fragShader) glDeleteShader(fragShader);
+			if (shdr_Cmp)   glDeleteShader(shdr_Cmp);
+			if (shdr_m_Vrt) glDeleteShader(shdr_m_Vrt);
+			if (shdr_m_Frg) glDeleteShader(shdr_m_Frg);
+			if (shdr_r_Vrt) glDeleteShader(shdr_r_Vrt);
+			if (shdr_r_Frg) glDeleteShader(shdr_r_Frg);
 			free(sahderName);
 			free(shaderText);
 			free(fileText);
@@ -161,7 +193,7 @@ __forceinline void load_saheder_progs(u_4b* comp_Shader, u_4b* vert_Shader, u_4b
 	}
 	free(fileText);
 }
-// Загрузка массивов аттрибутов вершин
+// Загрузка массивов аттрибутов вершин моделей
 __forceinline void load_all_vetex_data(f_4b** result_array, u_8b* attrib_count, i_4b* moDels_count) {
 	f_4b* all_VertexAttribsArray;
 	f_4b** vecArr = nullptr;	// указатель на массивы вершин
@@ -341,27 +373,24 @@ __forceinline void init_view_matrix() {
 
 // Init() < - Загрузка шейдера расчета и отрисовки в GPU
 __forceinline void load_prog_to_GPU() {
-	u_4b compShader = 0;
-	u_4b vertShader = 0;
-	u_4b fragShader = 0;
-	i_4b success = 0;
-
-	load_saheder_progs(&compShader, &vertShader, &fragShader, &success);
-	if (!fragShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [FRAGMENT SHADER]\n");
-	if (!compShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [COMPUTE SHADER]\n");
-	if (!vertShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [VERTEX SHADER]\n");
+	SLoadingShaders Prog{ 0 };
+	load_saheder_progs(&Prog);
+	if (!Prog.models_FragShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [MODELS FRAGMENT SHADER]\n");
+	if (!Prog.models_VertShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [MODELS VERTEX SHADER]\n");
+	if (!Prog.region_FragShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [REGION FRAGMENT SHADER]\n");
+	if (!Prog.region_VertShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [REGION VERTEX SHADER]\n");
+	if (!Prog.compute_Shader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [COMPUTE SHADER]\n");
 	if (Logger.error_flag_ < 0) return;
 
 	// Создание шейдерной программы и линковка расчетного шейдера
 	emg_Buffer.index_compute_shader_ = glCreateProgram();
-	glAttachShader(emg_Buffer.index_compute_shader_, compShader);
+	glAttachShader(emg_Buffer.index_compute_shader_, Prog.compute_Shader);
 	glLinkProgram(emg_Buffer.index_compute_shader_);
-	// Проверка ошибок линковки расчетного шейдера
-	glGetProgramiv(emg_Buffer.index_compute_shader_, GL_LINK_STATUS, &success);
-	if (!success) {
-		glDeleteShader(compShader);
-		glDeleteShader(vertShader);
-		glDeleteShader(fragShader);
+	glGetProgramiv(emg_Buffer.index_compute_shader_, GL_LINK_STATUS, &Prog.success_loading);
+	if (!Prog.success_loading) {
+		glDeleteShader(Prog.compute_Shader);
+		glDeleteShader(Prog.models_VertShader);
+		glDeleteShader(Prog.models_FragShader);
 		char infoLog[512];
 		glGetProgramInfoLog(emg_Buffer.index_compute_shader_, 512, NULL, infoLog);
 		Logger.SetError("ERROR::SHADER::PROGRAM::LINKING_FAILED [COMPUTE SHADER]  LOG:\n");
@@ -369,97 +398,140 @@ __forceinline void load_prog_to_GPU() {
 		Logger.SetError("\n");
 		return;
 	}
-	// Создание шейдерной программы и линковка шейдеров
-	emg_Buffer.index_drawind_shader_ = glCreateProgram();
-	glAttachShader(emg_Buffer.index_drawind_shader_, vertShader);
-	glAttachShader(emg_Buffer.index_drawind_shader_, fragShader);
-	glLinkProgram(emg_Buffer.index_drawind_shader_);
-	// Проверка ошибок линковки
-	glGetProgramiv(emg_Buffer.index_drawind_shader_, GL_LINK_STATUS, &success);
-	if (!success) {
-		glDeleteShader(compShader);
-		glDeleteShader(vertShader);
-		glDeleteShader(fragShader);
+	// Создание шейдерной программы и линковка программы для объектов
+	emg_Buffer.index_draw_models_shader_ = glCreateProgram();
+	glAttachShader(emg_Buffer.index_draw_models_shader_, Prog.models_VertShader);
+	glAttachShader(emg_Buffer.index_draw_models_shader_, Prog.models_FragShader);
+	glLinkProgram(emg_Buffer.index_draw_models_shader_);
+	glGetProgramiv(emg_Buffer.index_draw_models_shader_, GL_LINK_STATUS, &Prog.success_loading);
+	if (!Prog.success_loading) {
+		glDeleteShader(Prog.compute_Shader);
+		glDeleteShader(Prog.models_VertShader);
+		glDeleteShader(Prog.models_FragShader);
 		char infoLog[1024];
-		glGetProgramInfoLog(emg_Buffer.index_drawind_shader_, 1024, NULL, infoLog);
+		glGetProgramInfoLog(emg_Buffer.index_draw_models_shader_, 1024, NULL, infoLog);
+		Logger.SetError("ERROR::SHADER::PROGRAM::LINKING_FAILED [ BASE_DRAW_SHADER ]  LOG:\n");
+		Logger.SetError(infoLog);
+		Logger.SetError("\n");
+		return;
+	}
+	// Создание шейдерной программы и линковка программы для местности
+	emg_Buffer.index_draw_region_shader_ = glCreateProgram();
+	glAttachShader(emg_Buffer.index_draw_region_shader_, Prog.region_VertShader);
+	glAttachShader(emg_Buffer.index_draw_region_shader_, Prog.region_FragShader);
+	glLinkProgram(emg_Buffer.index_draw_region_shader_);
+	glGetProgramiv(emg_Buffer.index_draw_region_shader_, GL_LINK_STATUS, &Prog.success_loading);
+	if (!Prog.success_loading) {
+		glDeleteShader(Prog.compute_Shader);
+		glDeleteShader(Prog.models_VertShader);
+		glDeleteShader(Prog.models_FragShader);
+		glDeleteShader(Prog.region_VertShader);
+		glDeleteShader(Prog.region_FragShader);
+		char infoLog[1024];
+		glGetProgramInfoLog(emg_Buffer.index_draw_region_shader_, 1024, NULL, infoLog);
 		Logger.SetError("ERROR::SHADER::PROGRAM::LINKING_FAILED [ BASE_DRAW_SHADER ]  LOG:\n");
 		Logger.SetError(infoLog);
 		Logger.SetError("\n");
 		return;
 	}
 	// Удаление шейдеров (они уже в программе)
-	glDeleteShader(compShader);
-	glDeleteShader(vertShader);
-	glDeleteShader(fragShader);
+	glDeleteShader(Prog.compute_Shader);
+	glDeleteShader(Prog.models_VertShader);
+	glDeleteShader(Prog.models_FragShader);
+	glDeleteShader(Prog.region_VertShader);
+	glDeleteShader(Prog.region_FragShader);
 }
 // Init() < - Загрузка атрибутов отрисовки в GPU
 __forceinline void load_attr_to_GPU() {
 	m4_64b InstancesMatrix[ONLINE_LIMIT] = {0};
-	// Cоздаем буфферы
-	glGenBuffers(1, &emg_Buffer.index_UBO_);
+	//+++++++++++++++++[ Camera Buffer ]++++++++++++++++++
+	glGenBuffers(1, &emg_Buffer.index_camera_UBO_);													// Создание буфера
+	glBindBuffer(GL_UNIFORM_BUFFER, emg_Buffer.index_camera_UBO_);									// Захват буфера
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, emg_Buffer.index_camera_UBO_);							// Привязка к layout(std140, binding = 0)
+	glBufferData(GL_UNIFORM_BUFFER, emg_Render.ViewMatrix_size_, nullptr, GL_DYNAMIC_DRAW);			// Настройка буфера
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_Render.ViewMatrix_size_, emg_Render.ViewMatrix_refc_);// Загрузка буфера
+	glBindBuffer(GL_UNIFORM_BUFFER, NULL);															// Отпускаем буфер
+	//+++++++++++++++++[ Matrix Buffer ]++++++++++++++++++
 	glGenBuffers(1, &emg_Buffer.index_matrixs_inderect_);
-	glGenBuffers(1, &emg_Buffer.index_attribs_inderect_);
-	// Привязываем буффер
-	glBindBuffer(GL_UNIFORM_BUFFER, emg_Buffer.index_UBO_);
-	glBufferData(GL_UNIFORM_BUFFER, emg_Render.ViewMatrix_size_, nullptr, GL_DYNAMIC_DRAW);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_Render.ViewMatrix_size_, emg_Render.ViewMatrix_refc_);
-	// Привязка к слоту 0
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, emg_Buffer.index_UBO_);
-	// Передадим смещения для моделей, которые будут обновляться каждый кадр
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_attribs_inderect_);
-	//glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(emg_ATR), emg_ATR, GL_DYNAMIC_DRAW);
-	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(emg_ATR), nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	emg_Render.DrawAttribut_refc_ =
-		glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(emg_CMD), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	// Привязка к слоту 1
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, emg_Buffer.index_attribs_inderect_);
-	// Передадим матрицы трансформации, которые будут расчитаны в шейдере
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_matrixs_inderect_);
-	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(InstancesMatrix), InstancesMatrix, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT);
-	// Привязка к слоту 8
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, emg_Buffer.index_matrixs_inderect_);
-	// Отвязываем буффер
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(InstancesMatrix), InstancesMatrix, NULL);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, emg_Buffer.index_matrixs_inderect_);		// Привязка к layout(std430, binding = 3)
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
-	glBindBuffer(GL_UNIFORM_BUFFER, NULL);
+	//+++++++++++++++++[ Attrib Buffer ]++++++++++++++++++
+	glGenBuffers(1, &emg_Buffer.index_attribs_inderect_);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_attribs_inderect_);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, emg_Buffer.index_attribs_inderect_);		// Привязка к layout(std430, binding = 1)
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, sizeof(emg_ATR), nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	emg_Buffer.DrawModelsAttribut_refc_ =
+		glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(emg_ATR), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+	//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
+	glGenBuffers(1, &emg_Buffer.index_comands_inderect_);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_comands_inderect_);
+	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, sizeof(emg_CMD), nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	emg_Buffer.DrawModelsCommands_refc_ =
+		glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, sizeof(emg_CMD), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
 }
-// Init() < - Заполняет загружает и передает модели в матрицу
+// Init() < - Заполняет загружает и передает модели в матрицу [Важен порядок загрузки в "data_map.mem"]
 __forceinline void load_mesh_to_GPU() {
 	f_4b* All_ModelsVertexes;
 	u_8b Vert_Сount;
-	// vertx_count - будет записанo количество элемнтов массива
+	// vertx_count - будет записанo количество элемнтов массива (все вертексы в одном массиве)
 	load_all_vetex_data(&All_ModelsVertexes, &Vert_Сount, &emg_Render.count_commands_);
 	if (!Vert_Сount) return;
-	// Создание VAO
-	glGenVertexArrays(1, &emg_Buffer.index_VAO_);
-	glBindVertexArray(emg_Buffer.index_VAO_);
-	// Привязка и заполнение Vertex emg_Buffer Object
-	glGenBuffers(1, &emg_Buffer.index_VBO_);
-	glBindBuffer(GL_ARRAY_BUFFER, emg_Buffer.index_VBO_);
-	//glBufferStorage( ***, ***, 0) - передав 0 скажем драйверу,что данные не изменяются
-	glBufferStorage(GL_ARRAY_BUFFER, Vert_Сount * sizeof(f_4b), All_ModelsVertexes, 0);
-	// Координаты (layout location = 0)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
-	glEnableVertexAttribArray(0);
-	// Нормали (layout location = 1)
+	//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
+	glGenVertexArrays(1, &emg_Buffer.index_meshes_VAO_);
+	glBindVertexArray(emg_Buffer.index_meshes_VAO_);
+	glGenBuffers(1, &emg_Buffer.index_meshes_VBO_);
+	glBindBuffer(GL_ARRAY_BUFFER, emg_Buffer.index_meshes_VBO_);
+	glBufferStorage(GL_ARRAY_BUFFER, Vert_Сount * sizeof(f_4b), All_ModelsVertexes, NULL);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0 );
+	glEnableVertexAttribArray(0); // Координаты (layout location = 0)
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
-	glEnableVertexAttribArray(1);
-	// Цвета (layout location = 2)
+	glEnableVertexAttribArray(1); // Нормали (layout location = 1)
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
-	glEnableVertexAttribArray(2);
-	// Массив команд отрисовки
-	glGenBuffers(1, &emg_Buffer.index_comands_inderect_);
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_comands_inderect_);
-	//glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(emg_CMD), emg_CMD, GL_STATIC_DRAW);
-	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, sizeof(emg_CMD), nullptr,	GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	emg_Render.DrawCommands_refc_ = 
-		glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, sizeof(emg_CMD),	GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	// Деактивация буферов
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+	glEnableVertexAttribArray(2); // Текстура (layout location = 2)
 	glBindBuffer(GL_ARRAY_BUFFER, NULL);
 	glBindVertexArray(NULL);
 	// Отчистка памяти массива мешей
 	free(All_ModelsVertexes);
 }
+// Init() < - Подготавливает буфер для мешей террейна
+__forceinline void init_wrld_in_GPU() {
+	i_8b commands_size = sizeof(emg_Render.RegionCommands_);
+	i_8b position_size = sizeof(emg_Render.RegionOffsets_);
+	//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
+	glGenBuffers(1, &emg_Buffer.index_regions_offsets_);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_regions_offsets_);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, emg_Buffer.index_regions_offsets_); // Привязка к layout(std430, binding = 2)
+	glBufferStorage(GL_SHADER_STORAGE_BUFFER, position_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	emg_Buffer.DrawRegionOffsets_refc_ =
+		glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, position_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+	//+++++++++++++++++[ Offsets Buffer ]+++++++++++++++++
+	glGenBuffers(1, &emg_Buffer.index_regions_command_);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_regions_command_);
+	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, commands_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	emg_Buffer.DrawRegionCommands_refc_ =
+		glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, commands_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+	//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
+	glGenVertexArrays(1, &emg_Buffer.index_regions_VAO_);
+	glBindVertexArray(emg_Buffer.index_regions_VAO_);
+	glGenBuffers(1, &emg_Buffer.index_regions_VBO_);
+	glBindBuffer(GL_ARRAY_BUFFER, emg_Buffer.index_regions_VBO_);
+	glBufferStorage(GL_ARRAY_BUFFER, ALL_REGION_VERTEX_DATA, NULL, NULL);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
+	glEnableVertexAttribArray(0); // Координаты (layout location = 0)
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
+	glEnableVertexAttribArray(1); // Нормали (layout location = 1)
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
+	glEnableVertexAttribArray(2); // Текстура (layout location = 2)
+	glBindBuffer(GL_ARRAY_BUFFER, NULL);
+	glBindVertexArray(NULL);
+}
+
 // Init() < - Загрузка буфферов в GPU
 __forceinline void load_txtr_to_GPU() {
 	i_4b x, y, n;
@@ -531,68 +603,62 @@ __forceinline void emg::render::Init() {
 	load_attr_to_GPU(); if (Logger.error_flag_ < 0) return;
 	load_txtr_to_GPU(); if (Logger.error_flag_ < 0) return;
 	load_mesh_to_GPU(); if (Logger.error_flag_ < 0) return;
+	//init_wrld_in_GPU(); if (Logger.error_flag_ < 0) return;
 }
-// Oчистка ресурсов
+// Метод: Oчистка ресурсов
 __forceinline void emg::render::Exit() {
-	// Перед очисткой ресурсов, принудительно дождаться завершения всех операций GPU
+	// Дождаться завершения всех операций GPU
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	glUseProgram(NULL);
 	glFinish();
-	glDeleteTextures(emg_Render.count_texutres_, emg_Buffer.textures_index_);
-	glDeleteVertexArrays(1, &emg_Buffer.index_VAO_);
-	glDeleteBuffers(1, &emg_Buffer.index_VBO_);
-	glDeleteBuffers(1, &emg_Buffer.index_UBO_);
+	// Отчистка ресурсов
+	glDeleteVertexArrays(1, &emg_Buffer.index_meshes_VAO_);
+	glDeleteBuffers(1, &emg_Buffer.index_meshes_VBO_);
 	glDeleteBuffers(1, &emg_Buffer.index_comands_inderect_);
-	glDeleteBuffers(1, &emg_Buffer.index_matrixs_inderect_);
 	glDeleteBuffers(1, &emg_Buffer.index_attribs_inderect_);
-	glDeleteProgram(emg_Buffer.index_drawind_shader_);
+	glDeleteBuffers(1, &emg_Buffer.index_matrixs_inderect_);
+	glDeleteVertexArrays(1, &emg_Buffer.index_regions_VAO_);
+	glDeleteBuffers(1, &emg_Buffer.index_regions_VBO_);
+	glDeleteBuffers(1, &emg_Buffer.index_regions_command_);
+	glDeleteBuffers(1, &emg_Buffer.index_regions_offsets_);
+	glDeleteTextures(emg_Render.count_texutres_, emg_Buffer.textures_index_);
+	glDeleteBuffers(1, &emg_Buffer.index_camera_UBO_);
 	glDeleteProgram(emg_Buffer.index_compute_shader_);
+	glDeleteProgram(emg_Buffer.index_draw_models_shader_);
+	glDeleteProgram(emg_Buffer.index_draw_region_shader_);
 }
-// Метод отрисовки сцены
+// Метод: Отрисовка сцены
 __forceinline void emg::render::CreateFrame() {
-	// Очистка буфера цвета
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//Включаем шейдер вычислений
-	while (!emg_Render.draw_command_is_free_.exchange(false, std::memory_order_acquire)) {};
-	Interpolation_Draw_Attributes();
-	glUseProgram(emg_Buffer.index_compute_shader_);
-	{
-		//Передаем данные о вершинах, с проверкой на переполнение
-		i_4b byte_size = emg_Render.count_instaces_ << 5;		// =  X * 32
-		if (byte_size > 0) memcpy(emg_Render.DrawAttribut_refc_, emg_ATR, byte_size);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);// Очистка буфера цвета
+	while (!emg_Render.draw_command_is_free_.exchange(false, std::memory_order_acquire)) {
+	}; //Ждем пока отпустят шейдер команд
+	Interpolation_Draw_Attributes(); //Интерполяция атрибутного массива
+	glUseProgram(emg_Buffer.index_compute_shader_); //Включаем шейдер вычислений
+	{	//Передаем данные о вершинах, с проверкой на переполнение
+		i_4b byte_size = emg_Render.count_instaces_ << 5;	// =  X * 32
+		memcpy(emg_Buffer.DrawModelsAttribut_refc_, emg_ATR, byte_size);
 		//Отслеживаем изменения в буфере команд отрисовкиs
 		if (emg_Render.draw_command_update_.load(std::memory_order_acquire)) {
 			byte_size = emg_Render.count_commands_ << 4;	// =  X * 16
-			if (byte_size > 0) {
-				memcpy(emg_Render.DrawCommands_refc_, emg_CMD, byte_size);
-			}
+			memcpy(emg_Buffer.DrawModelsCommands_refc_, emg_CMD, byte_size);
 		}
 	}
 	emg_Render.draw_command_is_free_.store(true, std::memory_order_release);
-	//Запуск расчетного шейдера
-	glDispatchCompute(emg_Render.count_work_group_, 1, 1);
-	//Обновить позицию камеры (считать ввод для камеры)
-	scene_update_camera();
-	//Проверка окончания работы расчетного шейдера
-	glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
-	//После рсчета переходим к рендерингу
-	glUseProgram(emg_Buffer.index_drawind_shader_);
-	//Передаем матрицу камеры
-	glBindBuffer(GL_UNIFORM_BUFFER, emg_Buffer.index_UBO_);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_Render.ViewMatrix_size_, emg_Render.ViewMatrix_refc_);
-	//Активация вершинного массива и массива команд
-	glBindVertexArray(emg_Buffer.index_VAO_);
-	//Активация текстур
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, emg_Buffer.textures_index_[0]);
-	//Отрисовка всех инстансов ( режим отрисовки, начало, количество команд, шаг )
+	glDispatchCompute(emg_Render.count_work_group_, 1, 1);			//Запуск расчетного шейдерa
+	scene_update_camera();											//Обновить позицию камеры (считать ввод для камеры)
+	glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);			//Проверка окончания работы расчетного шейдера
+	glUseProgram(emg_Buffer.index_draw_models_shader_);				//После рсчета переходим к рендерингу
+	glBindBuffer(GL_UNIFORM_BUFFER, emg_Buffer.index_camera_UBO_);	//Захват буфера матрицы камеры
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_Render.ViewMatrix_size_, emg_Render.ViewMatrix_refc_);//Передаем матрицу камеры
+	glBindVertexArray(emg_Buffer.index_meshes_VAO_);				//Активация вершинного массива и массива команд
+	glActiveTexture(GL_TEXTURE0);									//Активация текстур
+	glBindTexture(GL_TEXTURE_2D, emg_Buffer.textures_index_[0]);	//Используем текстуру
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_comands_inderect_);
-	glMultiDrawArraysIndirect(GL_TRIANGLES,0, emg_Render.count_commands_,sizeof(mth::SDrawCommand));
-	//Деактивация вершинного массива и буфферов
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
-	glBindBuffer(GL_UNIFORM_BUFFER, NULL);
-	glBindVertexArray(NULL);
+	glMultiDrawArraysIndirect(GL_TRIANGLES, 0, emg_Render.count_commands_, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);	//Деактивация
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);	//Деактивация
+	glBindBuffer(GL_UNIFORM_BUFFER, NULL);			//Деактивация
+	glBindVertexArray(NULL);						//Деактивация
 	//----------------------------------------------
 }
 
@@ -603,6 +669,7 @@ __forceinline void emg::render::CreateFrame() {
 #undef emg_CMD
 #undef emg_ATR
 #undef emg_Render
+#undef emg_Region
 #undef CHECK_3_LAST(word)
 #undef CHECK_3_FIRST(word, a, b, c)
 #undef CHECK_6_SYMBOLS_cmp(word)

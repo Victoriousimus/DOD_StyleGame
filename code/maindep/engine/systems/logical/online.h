@@ -12,7 +12,7 @@ enum WAYMASK {
 	Z = mth::SInstnOffSet::WAYMASK::Z
 };
 __forceinline Bool online_process(i_2b& _indx) {
-
+	
 	return false;
 }
 
