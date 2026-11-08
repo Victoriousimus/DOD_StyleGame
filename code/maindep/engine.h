@@ -89,7 +89,6 @@
 #define REGION_DRAWS_COUNT 9u	//Ландшафт в отрисовке
 #define REGION_BUFFER_COUNT 14u	//Ландшафт в буфере
 #define REGION_VERTEX_SIZE 65536u//Ландшафт
-#define ALL_REGION_VERTEX_DATA REGION_VERTEX_SIZE * REGION_BUFFER_COUNT * 8u
 
 //ИНДЕКСЫ КОДОВ КЛАВИШ
 #define EMG_INPUT_EXIT 0
@@ -99,14 +98,6 @@
 #define EMG_INPUT_LEFT 3
 #define EMG_INPUT_UP 5
 #define EMG_INPUT_DOWN 6
-
-#define Shader_Layout_VERT_POS 0
-#define Shader_Layout_VERT_NRM 1
-#define Shader_Layout_VERT_TEX 2
-#define Shader_Layout_SPACE 0
-#define Shader_Layout_ATTRB 1
-#define Shader_Layout_OFFST 2
-#define Shader_Layout_MTRIX 3
 
 #if REGION_BUFFER_COUNT < 9
 	using RegionFlagType = u_1b;
@@ -127,6 +118,12 @@ namespace emg {
 				mth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};
 				mth::SDrawCommand RegionCommands_[REGION_BUFFER_COUNT]{};	// Массив комманд
 				struct {
+					//+++++++++++++++++++++[LAYOUT]+++++++++++++++++++++
+					enum Layout {
+						Pos = 0, Nrm = 1, Tex = 2,
+						VwProj = 0, Offset = 1,
+						Attrib = 2, Matrix = 3
+					};
 					//+++++++++++++++++++++[MODELS]+++++++++++++++++++++
 					PMem DrawModelsCommands_refc_{};	// &< Указатель на память (GPU) массива команд 
 					PMem DrawModelsAttribut_refc_{};	// &< Указатель на память (GPU) массива атрибутов

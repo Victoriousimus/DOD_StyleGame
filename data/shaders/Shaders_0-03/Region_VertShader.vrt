@@ -8,18 +8,16 @@ layout(location = 2) in vec2 attrib_vertex_Tex;
 layout(std140, binding = 0) uniform SpaceMatrix {
     mat4 ViewProjMatrix;
 };
-layout(std430, binding = 2) readonly buffer RegionOffsets {
+layout(std430, binding = 1) readonly buffer RegionOffsets {
     vec2 Transform[];
 };
 out vec2 TexCoord;
 out float DifColor;
 void main() {
-    vec2 offset = Transform[gl_InstanceID];
-    vec3 lightDir = vec3(0.5773502,0.5773502,0.5773502); 
+    vec2 offset = Transform[gl_InstanceID + gl_BaseInstance];
     vec3 drawPos = attrib_vertex_Pos + vec3(offset.x, 0.0, offset.y);
-    float lambert = clamp(dot(attrib_vertex_Nrm, lightDir), 0.0, 1.0);
-    float ambient = 0.25;
-    DifColor = mix(ambient, 0.93, lambert);
+    vec3 FrontVec = vec3(0.5773502,0.5773502,0.5773502); 
+	DifColor = clamp(dot( attrib_vertex_Nrm, FrontVec ), 0.25, 0.93); // Учитываем матрицу модели
     TexCoord = attrib_vertex_Tex;
     gl_Position = ViewProjMatrix * vec4(drawPos, 1.0);
 }

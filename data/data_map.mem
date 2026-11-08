@@ -12,17 +12,18 @@
 		rfg:= data/shaders/Shaders_0-03/Region_FragShader.frg*
 		
 #MESHES:
-	msh:= data/models/meshes/cube.vtn*
-	msh:= data/models/meshes/caty.vtn*
-	msh:= data/models/meshes/foxy.vtn*
-	msh:= data/models/meshes/vert.vtn*
+	ID_000	msh:= data/models/meshes/cube.vtn*
+	ID_001	msh:= data/models/meshes/caty.vtn*
+	ID_002	msh:= data/models/meshes/foxy.vtn*
+	ID_003	msh:= data/models/meshes/vert.vtn*
 
+#TEXTURES:
+	ID_000	atl:= data/models/textures/atlas.png*
+	
 #LENSPACE_TYTICAL:
 	map:= data/models/meshes/world/m_XXX_XXX.vtn*
 	
 #PHYSIC_TYTICAL:
 	phs:= data/models/meshes/world/p_XXX_XXX.bit*
 	
-#TEXTURES:
-	atl:= data/models/textures/atlas.png*
 	
