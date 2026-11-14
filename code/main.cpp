@@ -3,7 +3,7 @@
 // битовае маски (N - 1), тоже что и x % N, где N - степень двойки
 #define MICRO_STEP 24	// Если (frame_count % ONLINE_BITMASK) == 0, пробуждаем поток данных в кадре(звук, активная логика)
 #define MACRO_STEP 255	// Если (frame_count % SOUNDS_BITMASK) == 0, пробуждаем мировой поток
-//#define TEST_FRAME_TIME 1000
+#define TEST_FRAME_TIME 5000
 #ifdef TEST_FRAME_TIME
 #define TEST_FRAME_FUNC(frame_func) frame_func
 #else
@@ -44,12 +44,12 @@ i_4b main() {
 	emg::Data.Window.Params.Input.key_nums_[EMG_INPUT_DOWN]	= static_cast<i_2b>('X');	//Вниз
 	emg::Data.Window.Params.Input.mouse_sensitivity_ = 0.0025f;
 
-	emg::Data.Files.files_data_map_= "data/data_map.mem";
-
 	emg::Data.Render.Camera.fov_ = 75.0f;
 	emg::Data.Render.Camera.far_ = 4096.0f;//16*96
 	emg::Data.Render.Camera.near_ = 0.1f;
 	emg::Data.Render.Camera.velocity_ = 0.08f;
+
+	emg::Data.Files.files_data_map_ = "data/data_map.mem";
 
 	if (Logger.error_flag_ >= 0) emg::window::Init();
 	if (Logger.error_flag_ >= 0) emg::render::Init();

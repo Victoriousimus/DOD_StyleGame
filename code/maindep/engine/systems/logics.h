@@ -145,10 +145,10 @@ __forceinline void emg::logics::Init() {
 	}
 	Enty_Curs.Attach(&Enty_List);
 
-
-	for (i_4b i = 2; i < 8; ++i) {
+	emg::Data.Logic.queue_add_to_draw_.Push(1);
+	/*for (i_4b i = 0; i < 1; ++i) {
 		emg::Data.Logic.queue_add_to_draw_.Push(i);
-	}
+	}*/
 }
 __forceinline void emg::logics::Exit() {
 	WorldVaribles.Free();

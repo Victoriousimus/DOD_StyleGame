@@ -12,6 +12,7 @@
 		rfg:= data/shaders/Shaders_0-03/Region_FragShader.frg*
 		
 #MESHES:
+	ID_MAP	msh:= data/models/meshes/grid.vtn*
 	ID_000	msh:= data/models/meshes/cube.vtn*
 	ID_001	msh:= data/models/meshes/caty.vtn*
 	ID_002	msh:= data/models/meshes/foxy.vtn*

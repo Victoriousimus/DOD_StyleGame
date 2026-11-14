@@ -102,8 +102,7 @@ __forceinline void emg::window::Init() {
 			if (glfwExtensionSupported("WGL_EXT_swap_control")) {
 				// Получаем указатель на функцию
 				typedef int (WINAPI* PFNWGLGETSWAPINTERVALEXTPROC)(void);
-				PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT =
-					(PFNWGLGETSWAPINTERVALEXTPROC)glfwGetProcAddress("wglGetSwapIntervalEXT");
+				PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC)glfwGetProcAddress("wglGetSwapIntervalEXT");
 				if (wglGetSwapIntervalEXT) {
 					// Запрашиваем текущее значение
 					if (wglGetSwapIntervalEXT() != emg_PAR.Flags.vert_sinkh_) {
