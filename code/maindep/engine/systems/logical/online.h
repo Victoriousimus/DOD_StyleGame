@@ -3,8 +3,8 @@
 #define MY_LIB_ONLINE_LOGICS_REALISATION
 #define Curs emg::Data.Logic.online_manager_list_
 #define Queue emg::Data.Logic.queue_add_to_draw_
-#define ToDraw(eIndexToDraw) { emg::Data.Render.essence_add_to_show_id_ = (eIndexToDraw); emg::render::InsertInDrawPipline(); }
-#define ToHide(eIndexToDraw) { emg::Data.Render.essence_add_to_hide_id_ = (eIndexToDraw); emg::render::RemoveInDrawPipline(); }
+#define ToDraw(eIndexToDraw) emg::render::InsertInDrawPipline(eIndexToDraw);
+#define ToHide(eIndexToDraw) emg::render::RemoveInDrawPipline(eIndexToDraw);
 
 enum WAYMASK {
 	X = mth::SInstnOffSet::WAYMASK::X,

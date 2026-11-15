@@ -129,9 +129,9 @@ namespace emg {
 					PMem DrawModelsAttribut_refc_{};	// &< Указатель на память (GPU) массива атрибутов
 					u_4b index_meshes_VAO_{};			// Индекс вершинного массива моделей объектов
 					u_4b index_meshes_VBO_{};			// Индекс вершинного буффера моделей объектов
+					u_4b index_meshes_matrix_{};		// Индекс массива модельных матриц в шейдере
 					u_4b index_comands_inderect_{};		// Индекс массива комманд
 					u_4b index_attribs_inderect_{};		// Индекс массива аттрибутов в шейдере
-					u_4b index_matrixs_inderect_{};		// Индекс массива модельных матриц в шейдере
 					//+++++++++++++++++++++[REGION]+++++++++++++++++++++
 					PMem DrawRegionCommands_refc_{};	// &< Указатель на память (GPU) массива команд
 					PMem DrawRegionOffsets_refc_{};		// &< Указатель на память (GPU) массива смещений
@@ -149,24 +149,22 @@ namespace emg {
 				} GPU;
 				struct {//Камера
 					m4_64b projection_matrix_{};// Матрица проекции
-					m4_64b cam_view_matrix_{};	// Матрица вида(камеры)
+					m4_64b view_matrix_{};	// Матрица вида(камеры)
 					v3_12b null_view_{};
 					v3_12b ang_front_{};
 					v3_12b angle_{};
 					v3_12b postn_{};
+					f_4b* view_refc_{};	//Быстрая ссылка на матрицу Пространства (оперативная память)
+					i_4b  view_size_{};	//Размер матрицы Пространства
 					f_4b velocity_{};
 					f_4b far_{};	//Дистанция отрисовки
 					f_4b near_{};	//Плоскость отсечения
 					f_4b fov_{};	//Угол обора
 				} Camera;
-				f_4b* ViewMatrix_refc_{};	//Быстрая ссылка на матрицу Пространства (оперативная память)
-				i_4b  ViewMatrix_size_{};	//Размер матрицы Пространства
 				i_4b count_texutres_{};		//Количество текстур и атласов
 				i_4b count_instaces_{};		//Количество инстансов в кадре
 				i_4b count_commands_{};		//Количество команд отрисовки
 				i_4b count_work_group_{};	//Количество рабочих групп в шейдере
-				u_2b essence_add_to_show_id_{};	//Индекс объекта для добавления в рендер
-				u_2b essence_add_to_hide_id_{};	//Индекс объекта для удаления из рендера
 				std::atomic<Bool> draw_command_update_{};	// Массив команд отрисовки изменен
 				std::atomic<Bool> draw_command_is_free_{};	// Массив команд отрисовки доступен
 			} Render;
@@ -212,7 +210,6 @@ namespace emg {
 				mth::SI2b_ArrQueue queue_add_to_draw_{};
 				mth::SI2b_ManagerList online_manager_list_{};
 				mth::SI2b_ForwardList online_list_{};
-				pthfd::CDumbPather PathManager;
 			} Logic;
 			struct {
 				c_wrd files_data_map_{};
@@ -231,8 +228,8 @@ namespace emg {
 		__forceinline extern void Init();
 		__forceinline extern void Exit();
 		__forceinline extern void CreateFrame();
-		__forceinline extern void InsertInDrawPipline();
-		__forceinline extern void RemoveInDrawPipline();
+		__forceinline extern void InsertInDrawPipline(u_2b);
+		__forceinline extern void RemoveInDrawPipline(u_2b);
 	}
 	namespace logics {
 		__forceinline extern void Init();

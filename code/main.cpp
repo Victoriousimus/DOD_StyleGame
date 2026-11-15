@@ -62,15 +62,13 @@ i_4b main() {
 			//if (emg::window::GetTime() < 0.0157f) continue;
 			++frame_count;
 			emg::window::UpdateEvent();
-			if (emg::Data.Window.Input.key_flags_[EMG_INPUT_EXIT]) {
+			if (emg::Data.Window.Input.key_flags_[EMG_INPUT_EXIT] || Logger.error_flag_ < 0) {
 				run_flag = false;
 				online_world_thread.stop();
 				offline_world_thread.stop();
 			}
-			else if ((frame_count % MICRO_STEP) == 0) 
-				online_world_thread.step();
-			else if ((frame_count % MACRO_STEP) == 0) 
-				offline_world_thread.step();
+			else if ((frame_count % MICRO_STEP) == 0) online_world_thread.step();
+			else if ((frame_count % MACRO_STEP) == 0) offline_world_thread.step();
 			emg::render::CreateFrame();
 			emg::window::UpdateFrame();
 
@@ -85,9 +83,9 @@ i_4b main() {
 				); 
 			TEST_POSITION_FUNC(
 					std::cout
-					<< "X:  " << emg::Data.Render.Camera.postn_.x
-					<< "Y:  " << emg::Data.Render.Camera.postn_.y
-					<< "Z:  " << emg::Data.Render.Camera.postn_.z
+					<< "X:  " << emg::Data.Render.emg_Render.Camera.postn_.x
+					<< "Y:  " << emg::Data.Render.emg_Render.Camera.postn_.y
+					<< "Z:  " << emg::Data.Render.emg_Render.Camera.postn_.z
 					<< std::endl
 				);
 		}//while(run && !emg::Data.Window.IsRunned())
