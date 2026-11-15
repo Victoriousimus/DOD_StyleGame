@@ -115,37 +115,32 @@ namespace emg {
 			struct { //render;
 				mth::SInstnAttrib InstnAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
 				mth::SDrawCommand DrawCommands_[MODELS_LIMIT]{};	// Массив комманд
-				mth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};
-				mth::SDrawCommand RegionCommands_[REGION_BUFFER_COUNT]{};	// Массив комманд
-				struct {
+				struct sds{
 					//+++++++++++++++++++++[LAYOUT]+++++++++++++++++++++
 					enum Layout {
-						Pos = 0, Nrm = 1, Tex = 2,
-						VwProj = 0, Offset = 1,
-						Attrib = 2, Matrix = 3
+						Pos = 0,
+						Nrm = 1,
+						Tex = 2,
+						VwProj = 0,
+						Offset = 1,
+						Attrib = 2,
+						Matrix = 3
 					};
 					//+++++++++++++++++++++[MODELS]+++++++++++++++++++++
 					PMem DrawModelsCommands_refc_{};	// &< Указатель на память (GPU) массива команд 
 					PMem DrawModelsAttribut_refc_{};	// &< Указатель на память (GPU) массива атрибутов
-					u_4b index_meshes_VAO_{};			// Индекс вершинного массива моделей объектов
-					u_4b index_meshes_VBO_{};			// Индекс вершинного буффера моделей объектов
+					PMem DrawHeigthMapArray_refc_{};		// &< Указатель на память (GPU) массив высот
 					u_4b index_comands_inderect_{};		// Индекс массива комманд
 					u_4b index_attribs_inderect_{};		// Индекс массива аттрибутов в шейдере
-					u_4b index_matrixs_inderect_{};		// Индекс массива модельных матриц в шейдере
-					//+++++++++++++++++++++[REGION]+++++++++++++++++++++
-					PMem DrawRegionCommands_refc_{};	// &< Указатель на память (GPU) массива команд
-					PMem DrawRegionOffsets_refc_{};		// &< Указатель на память (GPU) массива смещений
-					PMem DrawRegionVertexs_refc_{};		// &< Указатель на память (GPU) массива вершин
-					u_4b index_regions_VAO_{};			// Индекс вершинного массива моделей местности
-					u_4b index_regions_VBO_{};			// Индекс вершинного буффера моделей местности
-					u_4b index_regions_command_{};		// Индекс массива комманд
-					u_4b index_regions_offsets_{};		// Индекс массива аттрибутов в шейдере
-					//+++++++++++++++++++++[OTHRES]+++++++++++++++++++++
-					u_4b textures_index_[TEXTUR_LIMIT]{};	// ID текстурного буфера
+					u_4b index_heigths_inderect_{};		// Индекс массива модельных матриц в шейдере
 					u_4b index_camera_UBO_{};			// Индекс матрицы пространства(камеры) в шейдере
+					u_4b index_meshes_VAO_{};			// Индекс вершинного массива моделей объектов
+					u_4b index_meshes_VBO_{};			// Индекс вершинного буффера моделей объектов
+					//+++++++++++++++++++++[OTHRES]+++++++++++++++++++++
+					u_4b index_storage_textur_[TEXTUR_LIMIT]{};// ID текстурного буфера
+					u_4b index_storage_matrix_{};		// Индекс массива модельных матриц в шейдере
 					u_4b index_compute_shader_{};		// Индекс шейдера расчетов
-					u_4b index_draw_region_shader_{};	// Индекс шейдера отрисовки местности
-					u_4b index_draw_models_shader_{};	// Индекс шейдера отрисовки моделей
+					u_4b index_drawing_shader_{};		// Индекс шейдера отрисовки моделей
 				} GPU;
 				struct {//Камера
 					m4_64b projection_matrix_{};// Матрица проекции
