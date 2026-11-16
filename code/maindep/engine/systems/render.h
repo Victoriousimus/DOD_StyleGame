@@ -750,7 +750,6 @@ __forceinline void emg::render::CreateFrame() {
 #undef emg_Window
 #undef emg_Render
 #undef emg_Buffer
-#undef TEXTURES_LOAD_MODE
 #undef CHECK_3_LAST
 #undef CHECK_3_FIRST
 #undef CHECK_6_SYMBOLS_cmp
@@ -758,6 +757,7 @@ __forceinline void emg::render::CreateFrame() {
 #undef CHECK_6_SYMBOLS_vrt
 #undef CHECK_6_SYMBOLS_msh
 #undef CHECK_6_SYMBOLS_atl
+#undef TEXTURES_LOAD_MODE
 //===========================================================================================
 #define UnitVisualData emg::Data.Logic.unit_visual_data_
 #define DRW_Commands emg::Data.Render.DrawCommands_
