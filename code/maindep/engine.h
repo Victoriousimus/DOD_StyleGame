@@ -86,9 +86,9 @@
 #define ONLINE_LIMIT 32//Экземпляры
 #define ENTITY_LIMIT 128//32768//Сущности
 #define BEHEVIOR_PARAMS 8
+
 #define REGION_DRAWS_COUNT 9u	//Ландшафт в отрисовке
-#define REGION_BUFFER_COUNT 14u	//Ландшафт в буфере
-#define REGION_VERTEX_SIZE 65536u//Ландшафт
+#define REGION_COMND_COUNT 1u	//Ландшафт в буфере
 
 //ИНДЕКСЫ КОДОВ КЛАВИШ
 #define EMG_INPUT_EXIT 0
@@ -116,7 +116,7 @@ namespace emg {
 				mth::SInstnAttrib InstnAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
 				mth::SDrawCommand DrawCommands_[MODELS_LIMIT]{};	// Массив комманд
 				mth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};
-				mth::SDrawCommand RegionCommands_[REGION_BUFFER_COUNT]{};	// Массив комманд
+				mth::SDrawCommand RegionCommands_[REGION_COMND_COUNT]{};	// Массив комманд
 				struct {
 					//+++++++++++++++++++++[LAYOUT]+++++++++++++++++++++
 					enum Layout {
@@ -135,7 +135,6 @@ namespace emg {
 					//+++++++++++++++++++++[REGION]+++++++++++++++++++++
 					PMem DrawRegionCommands_refc_{};	// &< Указатель на память (GPU) массива команд
 					PMem DrawRegionOffsets_refc_{};		// &< Указатель на память (GPU) массива смещений
-					PMem DrawRegionVertexs_refc_{};		// &< Указатель на память (GPU) массива вершин
 					u_4b index_regions_VAO_{};			// Индекс вершинного массива моделей местности
 					u_4b index_regions_VBO_{};			// Индекс вершинного буффера моделей местности
 					u_4b index_regions_command_{};		// Индекс массива комманд

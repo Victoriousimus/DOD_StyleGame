@@ -1,3 +1,4 @@
+//REGION_FRAGMENT_SHADER
 #version 460 core
 
 uniform sampler2D uniform_Texture;

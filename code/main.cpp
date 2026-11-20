@@ -27,7 +27,7 @@ i_4b main() {
 	emg::Data.Window.Params.Size.width_ = 1280;	//Width
 	emg::Data.Window.Params.Size.heigth_ = 720;	//Height
 	emg::Data.Window.Params.Flags.glfw_smpls_ = 0;
-	emg::Data.Window.Params.Flags.vert_sinkh_ = 1;
+	emg::Data.Window.Params.Flags.vert_sinkh_ = 0;
 	emg::Data.Window.Params.Flags.wind_focus_ = 1;
 	emg::Data.Window.Params.Flags.wind_showd_ = 1;
 	emg::Data.Window.Params.Flags.cursorshow_ = 1;

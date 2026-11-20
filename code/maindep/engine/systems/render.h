@@ -199,6 +199,9 @@ __forceinline void load_all_vetex_data(f_4b** result_array, i_8b* attrib_count, 
 	i_4b moDel_count = 0;
 	t_wrd fileNames[MODELS_LIMIT] = {0};
 	t_wrd fileText;
+	*result_array = nullptr;
+	*moDels_count = 0;
+	*attrib_count = 0;
 
 	fileText = iof::load_file_txt(emg::Data.Files.files_data_map_, &lengt_accum);
 	if (!fileText) {
@@ -441,18 +444,21 @@ __forceinline void load_prog_to_GPU() {
 }
 // Init() < - Заполняет загружает и передает модели в матрицу [Важен порядок загрузки в "data_map.mem"]
 __forceinline void load_mesh_to_GPU() {
-	i_8b byte_size;
+	i_8b bufferByteSize;
 	{//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
-		i_8b Vert_Сount;
+		i_8b vertexСount;
 		f_4b* All_ModelsVertexes;
-		load_all_vetex_data(&All_ModelsVertexes, &Vert_Сount, &emg_Render.count_commands_);
-		if (Vert_Сount < 1) { Logger.SetError("ERROR::[logic.h]: MODELS_LOAD_FAIL [ Vert_Сount < 1 ]\n"); return; }
-		byte_size = Vert_Сount * sizeof(f_4b);
+		load_all_vetex_data(&All_ModelsVertexes, &vertexСount, &emg_Render.count_commands_);
+		if (!All_ModelsVertexes || vertexСount < 3) { 
+			Logger.SetError("ERROR::[render.h]: MODELS_LOAD_FAIL [ vertexСount < 24 ]\n");
+			return;
+		}
+		bufferByteSize = vertexСount * sizeof(f_4b);
 		glGenVertexArrays(1, &emg_Buffer.index_meshes_VAO_);
 		glBindVertexArray(emg_Buffer.index_meshes_VAO_);
 		glGenBuffers(1, &emg_Buffer.index_meshes_VBO_);
 		glBindBuffer(GL_ARRAY_BUFFER, emg_Buffer.index_meshes_VBO_);
-		glBufferStorage(GL_ARRAY_BUFFER, Vert_Сount * sizeof(f_4b), All_ModelsVertexes, NULL);
+		glBufferStorage(GL_ARRAY_BUFFER, vertexСount * sizeof(f_4b), All_ModelsVertexes, NULL);
 		glVertexAttribPointer(emg_Buffer.Layout::Pos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
 		glEnableVertexAttribArray(emg_Buffer.Layout::Pos); // Координаты
 		glVertexAttribPointer(emg_Buffer.Layout::Nrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
@@ -462,118 +468,135 @@ __forceinline void load_mesh_to_GPU() {
 		glBindBuffer(GL_ARRAY_BUFFER, NULL);
 		glBindVertexArray(NULL);
 		free(All_ModelsVertexes);
+		u_8b error_code = glGetError();
+		if (error_code != GL_NO_ERROR) {
+			Logger.SetError("ERROR::[render.h]: MODEL_BUFFER_FAIL \"emg_Buffer.index_meshes_VAO_\" or \"emg_Buffer.index_meshes_VBO_\"\n");
+			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+		}
 	}
 	{//+++++++++++++++++[ Matrix Buffer ]++++++++++++++++++
-		byte_size = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(m4_64b);
+		bufferByteSize = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(m4_64b);
 		glGenBuffers(1, &emg_Buffer.index_meshes_matrix_);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_meshes_matrix_);
-		glBufferStorage(GL_SHADER_STORAGE_BUFFER, byte_size, NULL, NULL);
+		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferByteSize, NULL, NULL);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg_Buffer.Layout::Matrix, emg_Buffer.index_meshes_matrix_);// Помечаем как матрицы
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+		u_8b error_code = glGetError();
+		if (error_code != GL_NO_ERROR) {
+			Logger.SetError("ERROR::[render.h]: MODEL_BUFFER_FAIL \"emg_Buffer.index_meshes_matrix_\"\n");
+			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+		}
 	}
 	{//+++++++++++++++++[ Attrib Buffer ]++++++++++++++++++
-		byte_size = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(mth::SInstnAttrib);
+		bufferByteSize = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(mth::SInstnAttrib);
 		glGenBuffers(1, &emg_Buffer.index_attribs_inderect_);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_attribs_inderect_);
-		glBufferStorage(GL_SHADER_STORAGE_BUFFER, byte_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 		emg_Buffer.DrawModelsAttribut_refc_ =
-			glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, byte_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+			glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg_Buffer.Layout::Attrib, emg_Buffer.index_attribs_inderect_);// Помечаем как аттрибуты
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
-		if (!emg_Buffer.DrawModelsAttribut_refc_) Logger.SetError("ERROR::[ logic.h ]: MODELS_MAPING_FAIL &<-DrawModelsAttribut_refc_\n");
+		if (!emg_Buffer.DrawModelsAttribut_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-DrawModelsAttribut_refc_\n");
+		u_8b error_code = glGetError();
+		if (error_code != GL_NO_ERROR) {
+			Logger.SetError("ERROR::[render.h]: MODEL_BUFFER_FAIL \"emg_Buffer.index_attribs_inderect_\"\n");
+			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+		}
 	}
 	{//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
-		byte_size = static_cast<i_8b>(MODELS_LIMIT) * sizeof(mth::SDrawCommand);
+		bufferByteSize = static_cast<i_8b>(MODELS_LIMIT) * sizeof(mth::SDrawCommand);
 		glGenBuffers(1, &emg_Buffer.index_comands_inderect_);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_comands_inderect_);
-		glBufferStorage(GL_DRAW_INDIRECT_BUFFER, byte_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		glBufferStorage(GL_DRAW_INDIRECT_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 		emg_Buffer.DrawModelsCommands_refc_ =
-			glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, byte_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+			glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
-		if (!emg_Buffer.DrawModelsCommands_refc_) Logger.SetError("ERROR::[ logic.h ]: MODELS_MAPING_FAIL &<-DrawModelsCommands_refc_\n");
+		if (!emg_Buffer.DrawModelsCommands_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-DrawModelsCommands_refc_\n");
+		u_8b error_code = glGetError();
+		if (error_code != GL_NO_ERROR) {
+			Logger.SetError("ERROR::[render.h]: MODEL_BUFFER_FAIL \"emg_Buffer.index_comands_inderect_\"\n");
+			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+		}
 	}
 }
 // Init() < - Подготавливает буфер для мешей террейна
 __forceinline void init_wrld_in_GPU() {
-	i_8b position_byte_size = static_cast<i_8b>(REGION_DRAWS_COUNT) * 8;//sizeof(f_4b)*2
-	i_8b commands_byte_size = static_cast<i_8b>(REGION_BUFFER_COUNT) * 16;//sizeof(u_4b)*4
-	i_8b vertexes_byte_size = static_cast<i_8b>(REGION_VERTEX_SIZE * REGION_BUFFER_COUNT) * 32 * 4;//(32)byte_vertex_size * (4)map_size_koef
-	//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
-	glGenBuffers(1, &emg_Buffer.index_regions_command_);
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_regions_command_);
-	glBufferStorage(GL_DRAW_INDIRECT_BUFFER, commands_byte_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	emg_Buffer.DrawRegionCommands_refc_ =
-		glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, commands_byte_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
-	//+++++++++++++++++[ Offsets Buffer ]+++++++++++++++++
-	glGenBuffers(1, &emg_Buffer.index_regions_offsets_);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_regions_offsets_);
-	glBufferStorage(GL_SHADER_STORAGE_BUFFER, position_byte_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	emg_Buffer.DrawRegionOffsets_refc_ =
-		glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, position_byte_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg_Buffer.Layout::Offset, emg_Buffer.index_regions_offsets_); // Помечаем как RegionOffsets
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
-	//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
-	glGenVertexArrays(1, &emg_Buffer.index_regions_VAO_);
-	glBindVertexArray(emg_Buffer.index_regions_VAO_);
-	glGenBuffers(1, &emg_Buffer.index_regions_VBO_);
-	glBindBuffer(GL_ARRAY_BUFFER, emg_Buffer.index_regions_VBO_);
-	glBufferStorage(GL_ARRAY_BUFFER, vertexes_byte_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	emg_Buffer.DrawRegionVertexs_refc_ =
-		glMapBufferRange(GL_ARRAY_BUFFER, 0, vertexes_byte_size, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-	glVertexAttribPointer(emg_Buffer.Layout::Pos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
-	glEnableVertexAttribArray(emg_Buffer.Layout::Pos); // Координаты
-	glVertexAttribPointer(emg_Buffer.Layout::Nrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
-	glEnableVertexAttribArray(emg_Buffer.Layout::Nrm); // Нормали
-	glVertexAttribPointer(emg_Buffer.Layout::Tex, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
-	glEnableVertexAttribArray(emg_Buffer.Layout::Tex); // Текстура
-	glBindBuffer(GL_ARRAY_BUFFER, NULL);
-	glBindVertexArray(NULL);
-	if(!emg_Buffer.DrawRegionCommands_refc_) Logger.SetError("ERROR::LENDSPACE::UNMAPPED [emg_Buffer.DrawRegionCommands_refc_]\n");
-	if(!emg_Buffer.DrawRegionOffsets_refc_)  Logger.SetError("ERROR::LENDSPACE::UNMAPPED [emg_Buffer.DrawRegionOffsets_refc_]\n");
-	if(!emg_Buffer.DrawRegionVertexs_refc_)  Logger.SetError("ERROR::LENDSPACE::UNMAPPED [emg_Buffer.DrawRegionVertexs_refc_]\n");
-	if (Logger.error_flag_ < 0) return;
+	i_8b bufferByteSize{};
+	emg_Buffer.DrawRegionCommands_refc_ = nullptr;
+	emg_Buffer.DrawRegionOffsets_refc_ = nullptr;
+	{//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
+		u_8b arrayByteSyze = 0;
+		f_4b* vertexArray = static_cast<f_4b*>(iof::load_file_ultrafast("data/models/regions/m_000_000.vtn", &arrayByteSyze));
+		if (!vertexArray || arrayByteSyze < 192) {
+			Logger.SetError("ERROR::[render.h]: LENDSPACE_LOAD_FAIL [ vertexСount < 24 ]\n");
+			return;
+		}
+		bufferByteSize = arrayByteSyze;
+		glGenVertexArrays(1, &emg_Buffer.index_regions_VAO_);
+		glBindVertexArray(emg_Buffer.index_regions_VAO_);
+		glGenBuffers(1, &emg_Buffer.index_regions_VBO_);
+		glBindBuffer(GL_ARRAY_BUFFER, emg_Buffer.index_regions_VBO_);
+		glBufferStorage(GL_ARRAY_BUFFER, bufferByteSize, vertexArray, NULL);
+		glVertexAttribPointer(emg_Buffer.Layout::Pos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
+		glEnableVertexAttribArray(emg_Buffer.Layout::Pos); // Координаты
+		glVertexAttribPointer(emg_Buffer.Layout::Nrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg_Buffer.Layout::Nrm); // Нормали
+		glVertexAttribPointer(emg_Buffer.Layout::Tex, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg_Buffer.Layout::Tex); // Текстура
+		glBindBuffer(GL_ARRAY_BUFFER, NULL);
+		glBindVertexArray(NULL);
+		iof::free_ultrafast_loaded_data(vertexArray);
+		u_8b error_code = glGetError();
+		if (error_code != GL_NO_ERROR) {
+			Logger.SetError("ERROR::[render.h]: LENDSPACE_BUFFER_FAIL \"emg_Buffer.index_regions_VAO_\" or \"emg_Buffer.index_regions_VBO_\"\n");
+			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+		}
 
-	u_8b len = 0;
-	f_4b* vecArr = static_cast<f_4b*>(iof::load_file_ultrafast("data/models/meshes/world/m_000_000.vtn", &len));
-	if (!vecArr || len < 1) {
-		Logger.SetError("ERROR::LENDSPACE::LOAD FAIL [\"data/models/meshes/world/m_000_000.vtn\"]\n"); 
-		return;
-	}
-	if (len > REGION_VERTEX_SIZE*32*4) {
-		Logger.SetError("ERROR::LENDSPACE::FAIL MODEL SIZE("); 
-		Logger.SetError(len);
-		Logger.SetError(") [\"data/models/meshes/world/m_000_000.vtn\"]\n");
-		return;
-	}
+		emg_Render.RegionCommands_[0].inst_first = 0;
+		emg_Render.RegionCommands_[0].inst_count = REGION_DRAWS_COUNT;
+		emg_Render.RegionCommands_[0].vert_first = 0;
+		emg_Render.RegionCommands_[0].vert_count = static_cast<u_4b>(bufferByteSize) >> 5;
 
-	for (i_4b i = 0; i < REGION_BUFFER_COUNT; ++i) {
-		PMem target_address = static_cast<f_4b*>(emg_Buffer.DrawRegionVertexs_refc_) + (i * REGION_VERTEX_SIZE * 8 * 4);
-		memcpy(target_address, vecArr, len);
-	}
-	for (i_4b i = 0; i < REGION_BUFFER_COUNT; ++i) {
-		mth::SDrawCommand& ItrCmd = emg_Render.RegionCommands_[i];
-		mth::F4_2pos& ItrOffset = emg_Render.RegionOffsets_[i];
-		ItrCmd.inst_count = 0;
-		ItrCmd.inst_first = i < 1? 0 : emg_Render.RegionCommands_[i-1].inst_first +1;
-		ItrCmd.vert_first = i * REGION_VERTEX_SIZE * 4;
-		ItrCmd.vert_count = len / 32;
-		if (i < REGION_DRAWS_COUNT) {
+		for (i_4b i = 0; i < REGION_DRAWS_COUNT; ++i) {
+			mth::F4_2pos& ItrOffset = emg_Render.RegionOffsets_[i];
 			f_4b pX = static_cast<f_4b>(-1 + (i / 3));
 			f_4b pY = static_cast<f_4b>(-1 + (i % 3));
 			ItrOffset.x = pX * 128.0f;
 			ItrOffset.y = pY * 128.0f;
-			ItrCmd.inst_count = 1;
 		}
 	}
-	memcpy(emg_Buffer.DrawRegionOffsets_refc_,  emg_Render.RegionOffsets_,  position_byte_size);
-	memcpy(emg_Buffer.DrawRegionCommands_refc_, emg_Render.RegionCommands_, commands_byte_size);
-	iof::free_ultrafast_loaded_data(vecArr);
-
-	u_8b error_code = glGetError();
-	if (error_code != GL_NO_ERROR) {
-		Logger.SetError("ERROR::LENDSPACE::LOAD FAIL [data/models/meshes/world/m_000_000.vtn]\n");
-		Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+	{//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
+		bufferByteSize = static_cast<i_8b>(REGION_COMND_COUNT) * 16;
+		glGenBuffers(1, &emg_Buffer.index_regions_command_);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_regions_command_);
+		glBufferStorage(GL_DRAW_INDIRECT_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		emg_Buffer.DrawRegionCommands_refc_ =
+			glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+		if (!emg_Buffer.DrawRegionCommands_refc_) Logger.SetError("ERROR::[render.h]: LENDSPACE_UNMAPPED [emg_Buffer.DrawRegionCommands_refc_]\n");
+		else memcpy(emg_Buffer.DrawRegionCommands_refc_, emg_Render.RegionCommands_, bufferByteSize);
+		u_8b error_code = glGetError();
+		if (error_code != GL_NO_ERROR) {
+			Logger.SetError("ERROR::[render.h]: LENDSPACE_BUFFER_FAIL \"emg_Buffer.index_regions_command_\"\n");
+			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+		}
+	}
+	{//+++++++++++++++++[ Offsets Buffer ]+++++++++++++++++
+		bufferByteSize = static_cast<i_8b>(REGION_DRAWS_COUNT) * 8;
+		glGenBuffers(1, &emg_Buffer.index_regions_offsets_);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_Buffer.index_regions_offsets_);
+		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		emg_Buffer.DrawRegionOffsets_refc_ =
+			glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg_Buffer.Layout::Offset, emg_Buffer.index_regions_offsets_); // Помечаем как RegionOffsets
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+		if (!emg_Buffer.DrawRegionOffsets_refc_)  Logger.SetError("ERROR::[render.h]: LENDSPACE_UNMAPPED [emg_Buffer.DrawRegionOffsets_refc_]\n");
+		else memcpy(emg_Buffer.DrawRegionOffsets_refc_, emg_Render.RegionOffsets_, bufferByteSize);
+		u_8b error_code = glGetError();
+		if (error_code != GL_NO_ERROR) {
+			Logger.SetError("ERROR::[render.h]: LENDSPACE_BUFFER_FAIL \"emg_Buffer.index_regions_offsets_\"\n");
+			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
+		}
 	}
 }
 
@@ -680,12 +703,6 @@ __forceinline void emg::render::Exit() {
 		emg_Buffer.DrawRegionCommands_refc_ = nullptr;
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
 	}
-	if (emg_Buffer.DrawRegionVertexs_refc_) {
-		glBindBuffer(GL_ARRAY_BUFFER, emg_Buffer.index_regions_VBO_);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-		emg_Buffer.DrawRegionVertexs_refc_ = nullptr;
-		glBindBuffer(GL_ARRAY_BUFFER, NULL);
-	}
 	glDeleteVertexArrays(1, &emg_Buffer.index_meshes_VAO_);
 	glDeleteBuffers(1, &emg_Buffer.index_meshes_VBO_);
 	glDeleteBuffers(1, &emg_Buffer.index_comands_inderect_);
@@ -705,33 +722,33 @@ __forceinline void emg::render::Exit() {
 __forceinline void emg::render::CreateFrame() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);// Очистка буфера цвета
 	Interpolation_UpdateCameraData();//Обновить позицию камеры (считать ввод для камеры)
-	glBindBuffer(GL_UNIFORM_BUFFER, emg_Buffer.index_camera_UBO_);	//Захват буфера матрицы камеры
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_Render.Camera.view_size_, emg_Render.Camera.view_refc_);//Передаем матрицу камеры
-	glActiveTexture(GL_TEXTURE0);									//Активация текстур
-	glBindTexture(GL_TEXTURE_2D, emg_Buffer.textures_index_[0]);	//Используем текстуру
 	Interpolation_UpdateLendspaces();//Интерполяция атрибутного массива
-	glUseProgram(emg_Buffer.index_draw_region_shader_); //Включаем шейдер вычислений
-	{
-		glBindVertexArray(emg_Buffer.index_regions_VAO_);				//Активация вершинного массива и массива команд
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_regions_command_);
-		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, REGION_BUFFER_COUNT, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
-	}
 	Interpolation_UpdateAttributes();//Интерполяция атрибутного массива
 	glUseProgram(emg_Buffer.index_compute_shader_); //Включаем шейдер вычислений
 	{	//Ждем пока отпустят буферы
-		while (!emg_Render.draw_command_is_free_.exchange(false, std::memory_order_acquire)) {}; 
+		while (!emg_Render.draw_command_is_free_.exchange(false, std::memory_order_acquire)) {};
 		//Передаем данные о вершинах, с проверкой на переполнение
-		i_4b byte_size = emg_Render.count_instaces_ << 5;	// =  X * 32
-		memcpy(emg_Buffer.DrawModelsAttribut_refc_, emg_ATR, byte_size);
+		u_8b ByteSize = emg_Render.count_instaces_ << 5;	// =  X * 32
+		memcpy(emg_Buffer.DrawModelsAttribut_refc_, emg_ATR, ByteSize);
 		//Отслеживаем изменения в буфере команд отрисовкиs
 		if (emg_Render.draw_command_update_.load(std::memory_order_acquire)) {
-			byte_size = emg_Render.count_commands_ << 4;	// =  X * 16
-			memcpy(emg_Buffer.DrawModelsCommands_refc_, emg_CMD, byte_size);
+			ByteSize = emg_Render.count_commands_ << 4;	// =  X * 16
+			memcpy(emg_Buffer.DrawModelsCommands_refc_, emg_CMD, ByteSize);
 		}
 		emg_Render.draw_command_is_free_.store(true, std::memory_order_release);
+		glDispatchCompute(emg_Render.count_work_group_, 1, 1);	//Запуск расчетного шейдерa
+		glActiveTexture(GL_TEXTURE0);									//Активация текстур
+		glBindTexture(GL_TEXTURE_2D, emg_Buffer.textures_index_[0]);	//Используем текстуру
+		glBindBuffer(GL_UNIFORM_BUFFER, emg_Buffer.index_camera_UBO_);	//Захват буфера матрицы камеры
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_Render.Camera.view_size_, emg_Render.Camera.view_refc_);//Передаем матрицу камеры
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);			//Проверка окончания работы расчетного шейдера
 	}
-	glDispatchCompute(emg_Render.count_work_group_, 1, 1);			//Запуск расчетного шейдерa
-	glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);			//Проверка окончания работы расчетного шейдера
+	glUseProgram(emg_Buffer.index_draw_region_shader_); // При использовании этой программы значительно просидает ФПС!!!!!!!!!!!!!!!!!
+	{ // Начало работы с шейдером отрисовки регионов
+		glBindVertexArray(emg_Buffer.index_regions_VAO_);				//Активация вершинного массива и массива команд
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_Buffer.index_regions_command_);
+		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, REGION_COMND_COUNT, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
+	} //Конец работы с шейдером отрисовки регионов
 	glUseProgram(emg_Buffer.index_draw_models_shader_);				//После рсчета переходим к рендерингу
 	{
 		glBindVertexArray(emg_Buffer.index_meshes_VAO_);				//Активация вершинного массива и массива команд
@@ -772,7 +789,7 @@ __forceinline void emg::render::InsertInDrawPipline(u_2b entityID) {
 	i_4b& WorkCount = emg::Data.Render.count_work_group_;
 
 	if (InstCount >= ONLINE_LIMIT - 1) {
-		Logger.SetError("ERROR::[ logic.h ]: add_active_essence_to_render()\n");
+		Logger.SetError("ERROR::[ render.h ]: add_active_essence_to_render()\n");
 		Logger.SetError("\temg_Render.count_instaces_ >= ONLINE_LIMIT\n");
 		Logger.SetError("\temg_Render.count_instaces_ = ");
 		Logger.SetError(InstCount);
@@ -817,7 +834,7 @@ __forceinline void emg::render::RemoveInDrawPipline(u_2b entityID) {
 	i_4b& CmndCount = emg::Data.Render.count_commands_;
 
 	if (InstCount <= 0) {
-		Logger.SetError("ERROR::[ logic.h ]: RemoveInDrawPipline()\n");
+		Logger.SetError("ERROR::[ render.h ]: RemoveInDrawPipline()\n");
 		Logger.SetError("\temg_Render.count_instaces_ <= 0\n");
 		Logger.SetError("\temg_Render.count_instaces_ = ");
 		Logger.SetError(InstCount);
@@ -827,7 +844,7 @@ __forceinline void emg::render::RemoveInDrawPipline(u_2b entityID) {
 	i_2b& mesh = ToHide_EntyData.mesh_id;
 	i_2b& inst = ToHide_EntyData.inst_id;
 	if (DRW_Commands[mesh].inst_count < 1) {
-		Logger.SetError("ERROR::[ logic.h ]: RemoveInDrawPipline()\n");
+		Logger.SetError("ERROR::[ render.h ]: RemoveInDrawPipline()\n");
 		Logger.SetError("\temg_CMD[mesh].inst_count < 1\n");
 		Logger.SetError("\temg_CMD[mesh].inst_count = ");
 		Logger.SetError(DRW_Commands[mesh].inst_count);
