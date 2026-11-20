@@ -115,8 +115,8 @@ namespace emg {
 			struct { //render;
 				mth::SInstnAttrib InstnAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
 				mth::SDrawCommand DrawCommands_[MODELS_LIMIT]{};	// Массив комманд
-				mth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};
-				mth::SDrawCommand RegionCommands_[REGION_COMND_COUNT]{};	// Массив комманд
+				mth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};		// Массив плоских смещений регионов
+				mth::SDrawCommand RegionCommands_[REGION_COMND_COUNT]{};	// Массив комманд отрисовки
 				struct {
 					//+++++++++++++++++++++[LAYOUT]+++++++++++++++++++++
 					enum Layout {
