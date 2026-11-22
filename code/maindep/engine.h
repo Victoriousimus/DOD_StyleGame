@@ -81,14 +81,14 @@
 #define WORLD_SIZE   64	 // 10 bit <- use xy 2 byte WORLD_POS
 #define REGION_SIZE  64	 //  6 bit <- use xy 2 byte WORLD_POS
 #define TERRAIN_SIZE 128 // DRAW_POS
-#define TEXTUR_LIMIT 2//Òåêòñóòðû
-#define MODELS_LIMIT 32//Ñóùíîñòè
-#define ONLINE_LIMIT 32//Ýêçåìïëÿðû
-#define ENTITY_LIMIT 128//32768//Ñóùíîñòè
+#define TEXTUR_LIMIT 2   //Òåêòñóòðû
+#define MODELS_LIMIT 32  //Ñóùíîñòè
+#define ONLINE_LIMIT 32  //Ýêçåìïëÿðû
+#define ENTITY_LIMIT 128 //32768//Ñóùíîñòè
 #define BEHEVIOR_PARAMS 8
 
+#define REGION_COMND_COUNT 5u	//Ëàíäøàôò â áóôåðå
 #define REGION_DRAWS_COUNT 9u	//Ëàíäøàôò â îòðèñîâêå
-#define REGION_COMND_COUNT 1u	//Ëàíäøàôò â áóôåðå
 
 //ÈÍÄÅÊÑÛ ÊÎÄÎÂ ÊËÀÂÈØ
 #define EMG_INPUT_EXIT 0
@@ -120,7 +120,8 @@ namespace emg {
 				struct {
 					//+++++++++++++++++++++[LAYOUT]+++++++++++++++++++++
 					enum Layout {
-						Pos = 0, Nrm = 1, Tex = 2,
+						MshPos = 0, MshNrm = 1, MshTex = 2,
+						RegPos = 0, RegTex = 1,
 						VwProj = 0, Offset = 1,
 						Attrib = 2, Matrix = 3
 					};

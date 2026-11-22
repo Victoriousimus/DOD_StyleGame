@@ -17,7 +17,7 @@ __forceinline Bool online_process(i_2b& _indx) {
 
 __forceinline void emg::logics::LocalManagerTic() {
 	i_2b enty_indx = 0;
-	Bool hide_flag;
+	Bool hide_flag = 0;
 	Curs.First();
 	while ((enty_indx = Queue.Pop()) > 0) {
 		ToDraw(enty_indx);

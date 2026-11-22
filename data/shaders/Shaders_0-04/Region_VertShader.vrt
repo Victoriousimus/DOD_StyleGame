@@ -1,0 +1,23 @@
+//REGION_VERTEX_SHADER
+#version 460 core
+
+layout(location = 0) in vec2 attrib_vertex_Pos;
+layout(location = 1) in vec2 attrib_vertex_Tex;
+
+layout(std140, binding = 0) uniform SpaceMatrix {
+    mat4 ViewProjMatrix;
+};
+layout(std430, binding = 1) readonly buffer RegionOffsets {
+    vec2 Transform[];
+};
+out vec2  TexCoord;
+out float DifColor;
+void main() {
+    vec2 XYpos = attrib_vertex_Pos + Transform[gl_InstanceID + gl_BaseInstance];
+    vec4 drawPos = vec4(XYpos.x, 0.0, XYpos.y, 1.0);
+    vec3 FrontVec = vec3(0.5773502,0.5773502,0.5773502); 
+    vec3 ZetUpVec = vec3(0.0, 1.0, 0.0); 
+	DifColor = clamp(dot( ZetUpVec, FrontVec ), 0.25, 0.93); // Учитываем матрицу модели
+    TexCoord = attrib_vertex_Tex;
+    gl_Position = ViewProjMatrix * drawPos;
+}

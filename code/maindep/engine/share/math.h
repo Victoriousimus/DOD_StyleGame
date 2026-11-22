@@ -53,7 +53,12 @@ namespace mth {
 		f_8b x;
 		f_8b y;
 	};
-
+	struct MapVertex {
+		f_4b x;
+		f_4b y;
+		f_4b u;
+		f_4b v;
+	};
 	struct SEssenceMeta {
 		i_2b txtr_id; //( Draw_Texture_ID  ) Íîìåð òåêñòóðû
 		i_2b anim_id; //( Draw_Animated_ID ) Íîìåð àíèìàöèè

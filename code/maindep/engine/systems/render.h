@@ -35,7 +35,6 @@ struct SLoadingShaders {
 	u_4b compute_Shader;
 	i_4b success_loading;
 };
-
 // загрузка региона
 __forceinline void Interpolation_UpdateLendspaces() {
 	//glNamedBufferSubData(emg_Region.index_meshes_VBO_, slot * REGION_VERTEX_SIZE, bytes, data);
@@ -89,6 +88,49 @@ __forceinline void Interpolation_UpdateCameraData() {
 		glm::lookAt( emg_Render.Camera.postn_, emg_Render.Camera.postn_ + emg_Render.Camera.ang_front_, emg_Render.Camera.null_view_ );
 }
 
+// Процедура формирования шейдерного буфера с прямой ссылкой на память
+__forceinline PMem bild_refc_storage(u_4b* buf_id, i_8b byte_size, i_4b layout, u_4b type, u_4b flags) {
+	PMem buf_refc = nullptr;
+	glGenBuffers(1, buf_id);
+	glBindBuffer(type, *buf_id);
+	glBufferStorage(type, byte_size, nullptr, flags);
+	buf_refc = glMapBufferRange(type, 0, byte_size, flags);
+	if (layout > 0) {
+		u_4b ShaderLayout = layout;
+		glBindBufferBase(type, ShaderLayout, *buf_id); // Помечаем как RegionOffsets
+	}
+	glBindBuffer(type, NULL);
+	return buf_refc;
+}
+// Построение массивов аттрибутов и вершин регионов
+__forceinline f_4b* bild_region(i_8b* array_size, i_4b quad_w, f_4b stride_c) {
+	*array_size = 0;
+	const i_8b QUAD_W = quad_w;
+	const f_4b COORDINATE_STRIDE = stride_c;
+	const i_8b floatCount = QUAD_W * QUAD_W * 24;
+	f_4b* Array = new f_4b[floatCount];
+	for (i_8b y = 0; y < QUAD_W; ++y) {
+		for (i_8b x = 0; x < QUAD_W; ++x) {
+			const i_8b p = (y * QUAD_W + x) * 24;
+			const f_4b x0 = static_cast<f_4b>(x + 0) * COORDINATE_STRIDE;
+			const f_4b y0 = static_cast<f_4b>(y + 0) * COORDINATE_STRIDE;
+			const f_4b x1 = static_cast<f_4b>(x + 1) * COORDINATE_STRIDE;
+			const f_4b y1 = static_cast<f_4b>(y + 1) * COORDINATE_STRIDE;
+			const f_4b u0 = 0.5f, u1 = 0.9f;
+			const f_4b v0 = 0.1f, v1 = 0.5f;
+			// Треугольник 1:
+			Array[p + 0] = x0;	Array[p + 1] = y0;	Array[p + 2] = u0; Array[p + 3] = v0;
+			Array[p + 4] = x0;	Array[p + 5] = y1;	Array[p + 6] = u0; Array[p + 7] = v1;
+			Array[p + 8] = x1;	Array[p + 9] = y1;	Array[p + 10] = u1; Array[p + 11] = v1;
+			// Треугольник 2:
+			Array[p + 12] = x1; Array[p + 13] = y0;	Array[p + 14] = u1; Array[p + 15] = v0;
+			Array[p + 16] = x0; Array[p + 17] = y0;	Array[p + 18] = u0; Array[p + 19] = v0;
+			Array[p + 20] = x1; Array[p + 21] = y1;	Array[p + 22] = u1; Array[p + 23] = v1;
+		}
+	}
+	*array_size = floatCount;
+	return Array;
+}
 //Загрузка шейдерных программ
 __forceinline void load_saheder_progs(SLoadingShaders* SLoadingShaders) {
 	u_4b& shdr_Cmp = SLoadingShaders->compute_Shader;
@@ -190,18 +232,18 @@ __forceinline void load_saheder_progs(SLoadingShaders* SLoadingShaders) {
 	}
 	free(fileText);
 }
-// Загрузка массивов аттрибутов вершин моделей
-__forceinline void load_all_vetex_data(f_4b** result_array, i_8b* attrib_count, i_4b* moDels_count) {
+// Загрузка массивов аттрибутов и вершин моделей
+__forceinline void load_all_vetex_data(f_4b** result_array, i_8b* array_size, i_4b* models_count) {
 	f_4b* all_VertexAttribsArray;
 	f_4b** vecArr = nullptr;	// указатель на массивы вершин
 	u_8b* vecLen = nullptr;		// указатели на длинны массивов
 	u_8b lengt_accum = 0;
-	i_4b moDel_count = 0;
+	i_4b model_count = 0;
 	t_wrd fileNames[MODELS_LIMIT] = {0};
 	t_wrd fileText;
 	*result_array = nullptr;
-	*moDels_count = 0;
-	*attrib_count = 0;
+	*models_count = 0;
+	*array_size = 0;
 
 	fileText = iof::load_file_txt(emg::Data.Files.files_data_map_, &lengt_accum);
 	if (!fileText) {
@@ -209,63 +251,63 @@ __forceinline void load_all_vetex_data(f_4b** result_array, i_8b* attrib_count, 
 		Logger.SetError(emg::Data.Files.files_data_map_);
 		Logger.SetError(" ] \n");
 		*result_array = nullptr;
-		*moDels_count = 0;
-		*attrib_count = 0;
+		*models_count = 0;
+		*array_size = 0;
 		return;
 	}
 	for (i_4b j, i = 0; i < lengt_accum - 5; ++i) {
 		if(SYM_ModelMeshData(fileText)) {
-			fileNames[moDel_count] = new t_sym[64];
-			if (!fileNames[moDel_count]) {
-				Logger.SetError("ERROR::[ render.h ]: load_all_vetex_data(result_array, attrib_count): fileNames[");
-				Logger.SetError(moDel_count);
+			fileNames[model_count] = new t_sym[64];
+			if (!fileNames[model_count]) {
+				Logger.SetError("ERROR::[ render.h ]: load_all_vetex_data(result_array, array_size): fileNames[");
+				Logger.SetError(model_count);
 				Logger.SetError("] MALLOC ERROR\n");
-				for (j = 0; j < moDel_count; ++j) { delete[] fileNames[j]; }
+				for (j = 0; j < model_count; ++j) { delete[] fileNames[j]; }
 				free(fileText);
 				*result_array = nullptr;
-				*moDels_count = 0;
-				*attrib_count = 0;
+				*models_count = 0;
+				*array_size = 0;
 				return;
 			}
 			for (j = 0, i += 6; i < lengt_accum; ++i, ++j) {
-				fileNames[moDel_count][j] = fileText[i];
-				if (fileNames[moDel_count][j] == '*') break;
+				fileNames[model_count][j] = fileText[i];
+				if (fileNames[model_count][j] == '*') break;
 			}
-			fileNames[moDel_count][j] = '\0';
-			++moDel_count;
+			fileNames[model_count][j] = '\0';
+			++model_count;
 		}
 	} 
 	free(fileText);
 	// Инициализируем временное хранилище памяти для штучных мешей, для дальнейшего объеденения
-	vecArr = new f_4b*[moDel_count];	// <- Массив указателей на масссивы вершин
-	vecLen = new u_8b[moDel_count];	// <- Массив длин массивов по указателю
+	vecArr = new f_4b*[model_count];	// <- Массив указателей на масссивы вершин
+	vecLen = new u_8b[model_count];	// <- Массив длин массивов по указателю
 	if (!vecArr || !vecLen) {
-		Logger.SetError("ERROR::[ render.h ]:vecArr = malloc(moDel_count * size); vecLen = malloc(moDel_count * size)\n");
-		for (i_4b i = 0; i < moDel_count; ++i) { delete[] fileNames[i]; }
+		Logger.SetError("ERROR::[ render.h ]:vecArr = malloc(model_count * size); vecLen = malloc(model_count * size)\n");
+		for (i_4b i = 0; i < model_count; ++i) { delete[] fileNames[i]; }
 		if(vecLen) delete[] vecLen;
 		if(vecArr) delete[] vecArr;
 		*result_array = nullptr;
-		*moDels_count = 0;
-		*attrib_count = 0;
+		*models_count = 0;
+		*array_size = 0;
 		return;
 	}
 	lengt_accum = 0;
-	for (i_4b i = 0; i < moDel_count; ++i) { vecArr[i] = nullptr; }
+	for (i_4b i = 0; i < model_count; ++i) { vecArr[i] = nullptr; }
 	// Загружаем во вершины в массивы и формируем под него DrawComand
 	COUT_CMD( std::cout << "--------------------------------------------------\n" << std::endl );
-	for (i_4b i = 0; i < moDel_count; ++i) {
+	for (i_4b i = 0; i < model_count; ++i) {
 		vecArr[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &vecLen[i]));// vecLen[i] - будет записана длинна массива в байтах
 		delete[] fileNames[i];
 		if (!vecArr[i]) {
 			Logger.SetError("ERROR::[ render.h ]:vecArr[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &vertx_count));\n");
 			// Подчищаем временные хранилища мешей
 			for (i_4b j = i; j > -1; --j) { iof::free_ultrafast_loaded_data(vecArr[j]); }
-			for (i_4b j = 0; j < moDel_count; ++j) { delete[] fileNames[j]; }
+			for (i_4b j = 0; j < model_count; ++j) { delete[] fileNames[j]; }
 			delete[] vecLen;
 			delete[] vecArr;
 			*result_array = nullptr; 
-			*moDels_count = 0;
-			*attrib_count = 0;
+			*models_count = 0;
+			*array_size = 0;
 			return;
 		}
 		DRW_Commands[i].inst_count = 0; // Количество инстансов
@@ -293,12 +335,12 @@ __forceinline void load_all_vetex_data(f_4b** result_array, i_8b* attrib_count, 
 	all_VertexAttribsArray = static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)));
 	if (!all_VertexAttribsArray) {
 		Logger.SetError("ERROR::[ render.h ]: static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)))\n");
-		for (i_4b i = 0; i < moDel_count;++i) { iof::free_ultrafast_loaded_data(vecArr[i]); }
+		for (i_4b i = 0; i < model_count;++i) { iof::free_ultrafast_loaded_data(vecArr[i]); }
 		delete[] vecLen;
 		delete[] vecArr;
 		*result_array = nullptr;
-		*moDels_count = 0;
-		*attrib_count = 0;
+		*models_count = 0;
+		*array_size = 0;
 		return;
 	};
 	for (i_4b OnVec = 0, p = 0, i = 0; i < lengt_accum; ++i, ++p) {
@@ -310,11 +352,10 @@ __forceinline void load_all_vetex_data(f_4b** result_array, i_8b* attrib_count, 
 	}
 	delete[] vecLen;
 	delete[] vecArr;
-	*moDels_count = moDel_count;
-	*attrib_count = lengt_accum;
+	*array_size = lengt_accum;
+	*models_count = model_count;
 	*result_array = all_VertexAttribsArray;
 }
-
 // Init() < - Настройка параметров отрисовки
 __forceinline void init_draw_params() {
 	if (!gladLoadGL()) {
@@ -446,25 +487,25 @@ __forceinline void load_prog_to_GPU() {
 __forceinline void load_mesh_to_GPU() {
 	i_8b bufferByteSize;
 	{//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
-		i_8b vertexСount;
+		i_8b float_count;
 		f_4b* All_ModelsVertexes;
-		load_all_vetex_data(&All_ModelsVertexes, &vertexСount, &emg_Render.count_commands_);
-		if (!All_ModelsVertexes || vertexСount < 3) { 
-			Logger.SetError("ERROR::[render.h]: MODELS_LOAD_FAIL [ vertexСount < 24 ]\n");
+		load_all_vetex_data(&All_ModelsVertexes, &float_count, &emg_Render.count_commands_);
+		if (!All_ModelsVertexes || float_count < 24) {
+			Logger.SetError("ERROR::[render.h]: MODELS_LOAD_FAIL [ float_count < 24 ]\n");
 			return;
 		}
-		bufferByteSize = vertexСount * sizeof(f_4b);
+		bufferByteSize = float_count * sizeof(f_4b);
 		glGenVertexArrays(1, &emg_GPU.index_meshes_VAO_);
 		glBindVertexArray(emg_GPU.index_meshes_VAO_);
 		glGenBuffers(1, &emg_GPU.index_meshes_VBO_);
 		glBindBuffer(GL_ARRAY_BUFFER, emg_GPU.index_meshes_VBO_);
-		glBufferStorage(GL_ARRAY_BUFFER, vertexСount * sizeof(f_4b), All_ModelsVertexes, NULL);
-		glVertexAttribPointer(emg_GPU.Layout::Pos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
-		glEnableVertexAttribArray(emg_GPU.Layout::Pos); // Координаты
-		glVertexAttribPointer(emg_GPU.Layout::Nrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
-		glEnableVertexAttribArray(emg_GPU.Layout::Nrm); // Нормали
-		glVertexAttribPointer(emg_GPU.Layout::Tex, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
-		glEnableVertexAttribArray(emg_GPU.Layout::Tex); // Текстура
+		glBufferStorage(GL_ARRAY_BUFFER, float_count * sizeof(f_4b), All_ModelsVertexes, NULL);
+		glVertexAttribPointer(emg_GPU.Layout::MshPos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
+		glEnableVertexAttribArray(emg_GPU.Layout::MshPos); // Координаты
+		glVertexAttribPointer(emg_GPU.Layout::MshNrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg_GPU.Layout::MshNrm); // Нормали
+		glVertexAttribPointer(emg_GPU.Layout::MshTex, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg_GPU.Layout::MshTex); // Текстура
 		glBindBuffer(GL_ARRAY_BUFFER, NULL);
 		glBindVertexArray(NULL);
 		free(All_ModelsVertexes);
@@ -489,13 +530,8 @@ __forceinline void load_mesh_to_GPU() {
 	}
 	{//+++++++++++++++++[ Attrib Buffer ]++++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(mth::SInstnAttrib);
-		glGenBuffers(1, &emg_GPU.index_attribs_inderect_);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_GPU.index_attribs_inderect_);
-		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		emg_GPU.DrawModelsAttribut_refc_ =
-			glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg_GPU.Layout::Attrib, emg_GPU.index_attribs_inderect_);// Помечаем как аттрибуты
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+		u_4b type = GL_SHADER_STORAGE_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+		emg_GPU.DrawModelsAttribut_refc_ = bild_refc_storage(&emg_GPU.index_attribs_inderect_, bufferByteSize, emg_GPU.Layout::Attrib, type, flag);
 		if (!emg_GPU.DrawModelsAttribut_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-DrawModelsAttribut_refc_\n");
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
@@ -505,12 +541,8 @@ __forceinline void load_mesh_to_GPU() {
 	}
 	{//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(MODELS_LIMIT) * sizeof(mth::SDrawCommand);
-		glGenBuffers(1, &emg_GPU.index_comands_inderect_);
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_comands_inderect_);
-		glBufferStorage(GL_DRAW_INDIRECT_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		emg_GPU.DrawModelsCommands_refc_ =
-			glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+		u_4b type = GL_DRAW_INDIRECT_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+		emg_GPU.DrawModelsCommands_refc_ = bild_refc_storage(&emg_GPU.index_comands_inderect_, bufferByteSize, -1, type, flag);
 		if (!emg_GPU.DrawModelsCommands_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-DrawModelsCommands_refc_\n");
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
@@ -525,54 +557,86 @@ __forceinline void init_wrld_in_GPU() {
 	emg_GPU.DrawRegionCommands_refc_ = nullptr;
 	emg_GPU.DrawRegionOffsets_refc_ = nullptr;
 	{//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
-		u_8b arrayByteSyze = 0;
-		f_4b* vertexArray = static_cast<f_4b*>(iof::load_file_ultrafast("data/models/regions/m_000_000.vtn", &arrayByteSyze));
-		if (!vertexArray || arrayByteSyze < 192) {
-			Logger.SetError("ERROR::[render.h]: LENDSPACE_LOAD_FAIL [ vertexСount < 24 ]\n");
+		const i_4b LOD_COUNT = REGION_COMND_COUNT;
+		const i_4b MAP_MAXIMAL = 128;
+		i_8b full_size = 0;
+		i_8b  LOD_size[LOD_COUNT]{ 0 };
+		f_4b* LOD_data[LOD_COUNT]{ 0 };
+		for (i_4b i = 0; i < LOD_COUNT; ++i) {
+			i_4b size = MAP_MAXIMAL >> i;
+			if (size < 1) {
+				Logger.SetError("ERROR::[render.h]: LENDSPACE_BILD_FAIL [ LOD_");
+				Logger.SetError(i); Logger.SetError(" <-> SIZE < 1 ]\n");
+			}
+			LOD_data[i] = bild_region(&LOD_size[i], size, (1.0f * static_cast<f_4b>(1<<i)));
+			full_size += LOD_size[i];
+			if (!LOD_data[i] || LOD_size[i] < 24) {
+				Logger.SetError("ERROR::[render.h]: LENDSPACE_BILD_FAIL [ LOD_");
+				Logger.SetError(i); Logger.SetError(" < 24 ]\n");
+			}
+			if (Logger.error_flag_ < 0) { for (i_4b j = i; j > 0; --i) { delete[] LOD_data[j]; } return; }
+		}
+		f_4b* all_VertexArray = new f_4b[full_size];
+		if (!all_VertexArray || full_size < 24) {
+			Logger.SetError("ERROR::[render.h]: LENDSPACE_FAIL_ALLOC [ FullArray < 24 ]\n");
+			for (i_4b i = 0; i < LOD_COUNT; ++i) delete[] LOD_data[i];
 			return;
 		}
-		bufferByteSize = arrayByteSyze;
+		for (i_8b s = 0, p = 0, i = 0; i < full_size; ++i) {
+			if (p >= LOD_size[s]) {
+				delete[] LOD_data[s];
+				if ( ++s >= LOD_COUNT ) {
+					Logger.SetError("ERROR::[render.h]: LENDSPACE OUT OF RANGE\n");
+					for (i_8b j = s; j < LOD_COUNT; ++j) {
+						delete[] LOD_data[j];
+					}
+					delete[] all_VertexArray;
+					return;
+				}
+				p = 0;
+			}
+			all_VertexArray[i] = LOD_data[s][p];
+			++p;
+		}
+
+		for (i_8b i = 0; i < LOD_COUNT; ++i) {
+			emg_Render.RegionCommands_[i].inst_first = i > 0 ?
+				emg_Render.RegionCommands_[i - 1].inst_count +
+				emg_Render.RegionCommands_[i - 1].inst_first : 0;
+			emg_Render.RegionCommands_[i].vert_first = i > 0 ?
+				emg_Render.RegionCommands_[i - 1].vert_count + 
+				emg_Render.RegionCommands_[i - 1].vert_first : 0;
+			emg_Render.RegionCommands_[i].inst_count = 1;
+			emg_Render.RegionCommands_[i].vert_count = static_cast<u_4b>(LOD_size[i] >> 2);
+			emg_Render.RegionOffsets_[i].x = static_cast<f_4b>(MAP_MAXIMAL * i);
+			emg_Render.RegionOffsets_[i].y = 0.0f;
+		}
+
+
+
+		bufferByteSize = full_size * sizeof(f_4b);
 		glGenVertexArrays(1, &emg_GPU.index_regions_VAO_);
 		glBindVertexArray(emg_GPU.index_regions_VAO_);
 		glGenBuffers(1, &emg_GPU.index_regions_VBO_);
 		glBindBuffer(GL_ARRAY_BUFFER, emg_GPU.index_regions_VBO_);
-		glBufferStorage(GL_ARRAY_BUFFER, bufferByteSize, vertexArray, NULL);
-		glVertexAttribPointer(emg_GPU.Layout::Pos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
-		glEnableVertexAttribArray(emg_GPU.Layout::Pos); // Координаты
-		glVertexAttribPointer(emg_GPU.Layout::Nrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
-		glEnableVertexAttribArray(emg_GPU.Layout::Nrm); // Нормали
-		glVertexAttribPointer(emg_GPU.Layout::Tex, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
-		glEnableVertexAttribArray(emg_GPU.Layout::Tex); // Текстура
+		glBufferStorage(GL_ARRAY_BUFFER, bufferByteSize, all_VertexArray, NULL);
+		glVertexAttribPointer(emg_GPU.Layout::RegPos, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f_4b), (PMem)0);
+		glEnableVertexAttribArray(emg_GPU.Layout::RegPos); // Координаты
+		glVertexAttribPointer(emg_GPU.Layout::RegTex, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f_4b), (PMem)(2 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg_GPU.Layout::RegTex); // Текстура
 		glBindBuffer(GL_ARRAY_BUFFER, NULL);
 		glBindVertexArray(NULL);
-		iof::free_ultrafast_loaded_data(vertexArray);
+		delete[] all_VertexArray;
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
 			Logger.SetError("ERROR::[render.h]: LENDSPACE_BUFFER_FAIL \"emg_GPU.index_regions_VAO_\" or \"emg_GPU.index_regions_VBO_\"\n");
 			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
 		}
-
-		emg_Render.RegionCommands_[0].inst_first = 0;
-		emg_Render.RegionCommands_[0].inst_count = REGION_DRAWS_COUNT;
-		emg_Render.RegionCommands_[0].vert_first = 0;
-		emg_Render.RegionCommands_[0].vert_count = static_cast<u_4b>(bufferByteSize) >> 5;
-
-		for (i_4b i = 0; i < REGION_DRAWS_COUNT; ++i) {
-			mth::F4_2pos& ItrOffset = emg_Render.RegionOffsets_[i];
-			f_4b pX = static_cast<f_4b>(-1 + (i / 3));
-			f_4b pY = static_cast<f_4b>(-1 + (i % 3));
-			ItrOffset.x = pX * 128.0f;
-			ItrOffset.y = pY * 128.0f;
-		}
 	}
 	{//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(REGION_COMND_COUNT) * 16;
-		glGenBuffers(1, &emg_GPU.index_regions_command_);
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_regions_command_);
-		glBufferStorage(GL_DRAW_INDIRECT_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		emg_GPU.DrawRegionCommands_refc_ =
-			glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+		u_4b type = GL_DRAW_INDIRECT_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+		emg_GPU.DrawRegionCommands_refc_ = bild_refc_storage(&emg_GPU.index_regions_command_, bufferByteSize, -1, type, flag);
 		if (!emg_GPU.DrawRegionCommands_refc_) Logger.SetError("ERROR::[render.h]: LENDSPACE_UNMAPPED [emg_GPU.DrawRegionCommands_refc_]\n");
 		else memcpy(emg_GPU.DrawRegionCommands_refc_, emg_Render.RegionCommands_, bufferByteSize);
 		u_8b error_code = glGetError();
@@ -583,13 +647,8 @@ __forceinline void init_wrld_in_GPU() {
 	}
 	{//+++++++++++++++++[ Offsets Buffer ]+++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(REGION_DRAWS_COUNT) * 8;
-		glGenBuffers(1, &emg_GPU.index_regions_offsets_);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_GPU.index_regions_offsets_);
-		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferByteSize, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		emg_GPU.DrawRegionOffsets_refc_ =
-			glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, bufferByteSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg_GPU.Layout::Offset, emg_GPU.index_regions_offsets_); // Помечаем как RegionOffsets
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+		u_4b type = GL_SHADER_STORAGE_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+		emg_GPU.DrawRegionOffsets_refc_ = bild_refc_storage(&emg_GPU.index_regions_offsets_, bufferByteSize, emg_GPU.Layout::Offset, type, flag);
 		if (!emg_GPU.DrawRegionOffsets_refc_)  Logger.SetError("ERROR::[render.h]: LENDSPACE_UNMAPPED [emg_GPU.DrawRegionOffsets_refc_]\n");
 		else memcpy(emg_GPU.DrawRegionOffsets_refc_, emg_Render.RegionOffsets_, bufferByteSize);
 		u_8b error_code = glGetError();

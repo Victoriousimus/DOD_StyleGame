@@ -1,15 +1,15 @@
 #MODELS_DRAW_SHADERS:
 	#COMPUTE:
-		cmp:= data/shaders/Shaders_0-03/Models_CompShader.cmp*
+		cmp:= data/shaders/Shaders_0-04/Models_CompShader.cmp*
 	#VERTEX:
-		vrt:= data/shaders/Shaders_0-03/Models_VertShader.vrt*
+		vrt:= data/shaders/Shaders_0-04/Models_VertShader.vrt*
 	#FRAGMENT:
-		frg:= data/shaders/Shaders_0-03/Models_FragShader.frg*
+		frg:= data/shaders/Shaders_0-04/Models_FragShader.frg*
 #MODELS_DRAW_SHADERS:
 	#VERTEX:
-		rvt:= data/shaders/Shaders_0-03/Region_VertShader.vrt*
+		rvt:= data/shaders/Shaders_0-04/Region_VertShader.vrt*
 	#FRAGMENT:
-		rfg:= data/shaders/Shaders_0-03/Region_FragShader.frg*
+		rfg:= data/shaders/Shaders_0-04/Region_FragShader.frg*
 		
 #MESHES:
 	ID_000	msh:= data/models/meshes/cube.vtn*
