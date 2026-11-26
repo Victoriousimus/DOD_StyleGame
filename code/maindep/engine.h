@@ -89,7 +89,7 @@
 
 #define REGION_BAS_LENGTH 128u	//Размер в мапселях
 #define REGION_BAS_MAPXEL 1.0f	//Размер одного мапселя
-#define REGION_COMND_COUNT 2u	//Ландшафт в буфере
+#define REGION_COMND_COUNT 5u	//Ландшафт в буфере
 #define REGION_DRAWS_COUNT 9u	//Ландшафт в отрисовке
 #define REGION_HMAPS_COUNT 16u	//Ландшафт в отрисовке
 

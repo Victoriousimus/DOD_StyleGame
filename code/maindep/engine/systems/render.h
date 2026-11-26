@@ -765,13 +765,20 @@ __forceinline void load_hmap_to_GPU() {
 	glGenTextures(1, &emg_GPU.index_region_geometry_);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, emg_GPU.index_region_geometry_);
 	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 512, 512, 9);
-	for (i_1b i = 0; i < 3; ++i) {
-		for (i_1b j = 0; j < 3; ++j) {
+	for (i_4b i = 0; i < 3; ++i) {
+		for (i_4b j = 0; j < 3; ++j) {
 			u_1b* data;
-			GeometryfileName[lengt_accum - 5] = i;
-			GeometryfileName[lengt_accum - 9] = j;
-			data = stbi_load(GeometryfileName, &x, &y, &n, TEXTURES_LOAD_MODE);
-			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, 512, 512, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			GeometryfileName[lengt_accum - 5] = '0' + static_cast<t_sym>(i);
+			GeometryfileName[lengt_accum - 9] = '0' + static_cast<t_sym>(j);
+			data = stbi_load(GeometryfileName, &x, &y, &n, 4);
+			if (!data) {
+				Logger.SetError("ERROR::[ render.h ]: texture load [");
+				Logger.SetError(GeometryfileName);
+				Logger.SetError(" ] \n");
+				delete[] GeometryfileName;
+				return;
+			}
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, x, y, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		}
 	}
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -788,7 +795,7 @@ __forceinline void emg::render::Init() {
 	load_mesh_to_GPU(); if (Logger.error_flag_ < 0) return;
 	init_wrld_in_GPU(); if (Logger.error_flag_ < 0) return;
 	load_txtr_to_GPU(); if (Logger.error_flag_ < 0) return;
-	//load_hmap_to_GPU(); if (Logger.error_flag_ < 0) return;
+	load_hmap_to_GPU(); if (Logger.error_flag_ < 0) return;
 }
 // Метод: Oчистка ресурсов
 __forceinline void emg::render::Exit() {
@@ -855,28 +862,30 @@ __forceinline void emg::render::CreateFrame() {
 		}
 		emg_DrawData.draw_command_is_free_.store(true, std::memory_order_release);
 		glDispatchCompute(emg_DrawData.count_work_group_, 1, 1);	//Запуск расчетного шейдерa
-		glActiveTexture(GL_TEXTURE0);									//Активация текстур
-		glBindTexture(GL_TEXTURE_2D, emg_GPU.textures_index_[0]);	//Используем текстуру
 		glBindBuffer(GL_UNIFORM_BUFFER, emg_GPU.index_camera_UBO_);	//Захват буфера матрицы камеры
 		glBufferSubData(GL_UNIFORM_BUFFER, 0, emg_DrawData.Camera.view_size_, emg_DrawData.Camera.view_refc_);//Передаем матрицу камеры
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);			//Проверка окончания работы расчетного шейдера
 	}
+	glActiveTexture(GL_TEXTURE0);							//Активация текстур
+	glBindTexture(GL_TEXTURE_2D, emg_GPU.textures_index_[0]);//Используем текстуру
+	glActiveTexture(GL_TEXTURE1);							//Активация текстур
+	glBindTexture(GL_TEXTURE_2D_ARRAY, emg_GPU.index_region_geometry_);//Используем текстуру
 	glUseProgram(emg_GPU.index_draw_region_shader_); // При использовании этой программы значительно просидает ФПС!!!!!!!!!!!!!!!!!
 	{ // Начало работы с шейдером отрисовки регионов
-		glBindVertexArray(emg_GPU.index_region_VAO_);				//Активация вершинного массива и массива команд
+		glBindVertexArray(emg_GPU.index_region_VAO_);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_region_commands_);
 		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, REGION_COMND_COUNT, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
-	} //Конец работы с шейдером отрисовки регионов
-	glUseProgram(emg_GPU.index_draw_mesh_shader_);				//После рсчета переходим к рендерингу
-	{
-		glBindVertexArray(emg_GPU.index_mesh_VAO_);				//Активация вершинного массива и массива команд
+	}
+	glUseProgram(emg_GPU.index_draw_mesh_shader_);
+	{ // Начало работы с шейдером отрисовки сущностей
+		glBindVertexArray(emg_GPU.index_mesh_VAO_);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_mesh_commands_);
 		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, emg_DrawData.count_commands_, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
 	}
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);	//Деактивация
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);	//Деактивация
-	glBindBuffer(GL_UNIFORM_BUFFER, NULL);			//Деактивация
-	glBindVertexArray(NULL);						//Деактивация
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
+	glBindBuffer(GL_UNIFORM_BUFFER, NULL);
+	glBindVertexArray(NULL);
 	//----------------------------------------------
 }
 
