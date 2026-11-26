@@ -83,9 +83,9 @@ i_4b main() {
 				); 
 			TEST_POSITION_FUNC(
 					std::cout
-					<< "X:  " << emg::Data.Render.emg_Render.Camera.postn_.x
-					<< "Y:  " << emg::Data.Render.emg_Render.Camera.postn_.y
-					<< "Z:  " << emg::Data.Render.emg_Render.Camera.postn_.z
+					<< "X:  " << emg::Data.Render.emg_DrawData.Camera.postn_.x
+					<< "Y:  " << emg::Data.Render.emg_DrawData.Camera.postn_.y
+					<< "Z:  " << emg::Data.Render.emg_DrawData.Camera.postn_.z
 					<< std::endl
 				);
 		}//while(run && !emg::Data.Window.IsRunned())
