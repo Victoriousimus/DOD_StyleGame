@@ -21,9 +21,7 @@
 	ID_000	atl:= data/models/textures/atlas.png*
 	
 #LENSPACE_TYTICAL:
-	map:= data/models/regions/m_XXX_XXX.vtn*
+	map:= data/models/regions/m_000_000.vtn*
 	
 #PHYSIC_TYTICAL:
 	phs:= data/models/regions/p_XXX_XXX.bit*
-	
-	

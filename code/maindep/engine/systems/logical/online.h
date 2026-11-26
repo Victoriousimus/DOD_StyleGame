@@ -19,7 +19,7 @@ __forceinline void emg::logics::LocalManagerTic() {
 	i_2b enty_indx = 0;
 	Bool hide_flag = 0;
 	Curs.First();
-	while ((enty_indx = Queue.Pop()) > 0) {
+	while ((enty_indx = Queue.Pop()) >= 0) {
 		ToDraw(enty_indx);
 		Curs.PushItem(enty_indx);
 	}

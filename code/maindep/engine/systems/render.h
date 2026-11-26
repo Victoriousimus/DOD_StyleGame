@@ -17,8 +17,8 @@
 #define emg_DrawData emg::Data.Render
 #define emg_GPU emg::Data.Render.GPU
 
-#define DRW_Commands emg::Data.Render.DrawCommands_
-#define DRW_Attribs emg::Data.Render.InstnAttribs_
+#define DRW_Commands emg::Data.Render.MeshCommands_
+#define DRW_Attribs emg::Data.Render.MeshAttribs_
 #define TEXTURES_LOAD_MODE 3
 
 #ifdef LOAD_CMD_STDOUT
@@ -531,8 +531,8 @@ __forceinline void load_mesh_to_GPU() {
 	{//+++++++++++++++++[ Attrib Buffer ]++++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(mth::SInstnAttrib);
 		u_4b type = GL_SHADER_STORAGE_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-		emg_GPU.MeshAttribut_refc_ = bild_refc_storage(&emg_GPU.index_mesh_attribs_, bufferByteSize, emg_GPU.Layout::Attrib, type, flag);
-		if (!emg_GPU.MeshAttribut_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-MeshAttribut_refc_\n");
+		emg_GPU.MeshAttribs_refc_ = bild_refc_storage(&emg_GPU.index_mesh_attribs_, bufferByteSize, emg_GPU.Layout::Attrib, type, flag);
+		if (!emg_GPU.MeshAttribs_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-MeshAttribs_refc_\n");
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
 			Logger.SetError("ERROR::[render.h]: MODEL_BUFFER_FAIL \"emg_GPU.index_mesh_attribs_\"\n");
@@ -542,11 +542,11 @@ __forceinline void load_mesh_to_GPU() {
 	{//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(MODELS_LIMIT) * sizeof(mth::SDrawCommand);
 		u_4b type = GL_DRAW_INDIRECT_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-		emg_GPU.MeshCommands_refc_ = bild_refc_storage(&emg_GPU.index_mesh_comands_, bufferByteSize, -1, type, flag);
+		emg_GPU.MeshCommands_refc_ = bild_refc_storage(&emg_GPU.index_mesh_commands_, bufferByteSize, -1, type, flag);
 		if (!emg_GPU.MeshCommands_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-MeshCommands_refc_\n");
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
-			Logger.SetError("ERROR::[render.h]: MODEL_BUFFER_FAIL \"emg_GPU.index_mesh_comands_\"\n");
+			Logger.SetError("ERROR::[render.h]: MODEL_BUFFER_FAIL \"emg_GPU.index_mesh_commands_\"\n");
 			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
 		}
 	}
@@ -643,12 +643,12 @@ __forceinline void init_wrld_in_GPU() {
 	{//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(REGION_COMND_COUNT) * 16;
 		u_4b type = GL_DRAW_INDIRECT_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-		emg_GPU.RegionCommands_refc_ = bild_refc_storage(&emg_GPU.index_region_command_, bufferByteSize, -1, type, flag);
+		emg_GPU.RegionCommands_refc_ = bild_refc_storage(&emg_GPU.index_region_commands_, bufferByteSize, -1, type, flag);
 		if (!emg_GPU.RegionCommands_refc_) Logger.SetError("ERROR::[render.h]: LENDSPACE_UNMAPPED [emg_GPU.RegionCommands_refc_]\n");
 		else memcpy(emg_GPU.RegionCommands_refc_, emg_DrawData.RegionCommands_, bufferByteSize);
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
-			Logger.SetError("ERROR::[render.h]: LENDSPACE_BUFFER_FAIL \"emg_GPU.index_region_command_\"\n");
+			Logger.SetError("ERROR::[render.h]: LENDSPACE_BUFFER_FAIL \"emg_GPU.index_region_commands_\"\n");
 			Logger.SetError("GL_ERROR :"); Logger.SetError(error_code); Logger.SetError("\n");
 		}
 	}
@@ -665,15 +665,14 @@ __forceinline void init_wrld_in_GPU() {
 		}
 	}
 }
-
-// Init() < - Загрузка буфферов в GPU
+// Init() < - Загрузка текстур в GPU
 __forceinline void load_txtr_to_GPU() {
 	i_4b x, y, n;
-	t_wrd fileNames[TEXTUR_LIMIT];
+	t_wrd fileNames[TEXTUR_LIMIT]{ nullptr };
 	u_8b lengt_accum = 0;
 	u_4b texture_count = 0;
 	u_1b* data;
-	t_wrd fileText;
+	t_wrd fileText = nullptr;
 	for (i_4b i = 0; i < TEXTUR_LIMIT; ++i) {
 		fileNames[i] = nullptr;
 	}
@@ -722,11 +721,63 @@ __forceinline void load_txtr_to_GPU() {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		glBindTexture(GL_TEXTURE_2D, NULL);
 		stbi_image_free(data);
 		delete[] fileNames[i];
 	}
+}
+// Init() < - Загрузка карт высот в GPU
+__forceinline void load_hmap_to_GPU() {
+	t_wrd GeometryfileName = nullptr;
+	t_wrd fileText = nullptr;
+	u_8b lengt_accum = 0;
+	i_4b x, y, n;
+	fileText = iof::load_file_txt(emg::Data.Files.files_data_map_, &lengt_accum);
+	if (!fileText) {
+		Logger.SetError("ERROR::[ render.h ]: RegionHMap_Name load [");
+		Logger.SetError(emg::Data.Files.files_data_map_);
+		Logger.SetError(" ] \n");
+		return;
+	}
+	for (u_4b j, i = 0; i < lengt_accum - 5; ++i) {
+		if (SYM_RegionMeshData(fileText)) {
+			GeometryfileName = new t_sym[64];
+			if (!GeometryfileName) {
+				Logger.SetError("ERROR::[ render.h ]: load_hmap_to_GPU(): map:= : fileName = malloc(64)\n");
+				delete[] GeometryfileName;
+				free(fileText);
+				return;
+			}
+			for (j = 0, i += 6; i < lengt_accum; ++i, ++j) {
+				GeometryfileName[j] = fileText[i];
+				if (GeometryfileName[j] == '*') break;
+			} GeometryfileName[j] = '\0';
+			lengt_accum = j;
+		}
+	}
+	free(fileText);
+	if (!GeometryfileName) {
+		Logger.SetError("ERROR::[ render.h ]: load_hmap_to_GPU(): map:= : fileName = malloc(64)\n");
+		free(fileText);
+		return;
+	}
+	glGenTextures(1, &emg_GPU.index_region_geometry_);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, emg_GPU.index_region_geometry_);
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 512, 512, 9);
+	for (i_1b i = 0; i < 3; ++i) {
+		for (i_1b j = 0; j < 3; ++j) {
+			u_1b* data;
+			GeometryfileName[lengt_accum - 5] = i;
+			GeometryfileName[lengt_accum - 9] = j;
+			data = stbi_load(GeometryfileName, &x, &y, &n, TEXTURES_LOAD_MODE);
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, 512, 512, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 // Метод: Инифиализация рендера сцены
@@ -734,9 +785,10 @@ __forceinline void emg::render::Init() {
 	init_draw_params(); if (Logger.error_flag_ < 0) return;
 	init_view_matrix(); if (Logger.error_flag_ < 0) return;
 	load_prog_to_GPU(); if (Logger.error_flag_ < 0) return;
-	load_txtr_to_GPU(); if (Logger.error_flag_ < 0) return;
 	load_mesh_to_GPU(); if (Logger.error_flag_ < 0) return;
 	init_wrld_in_GPU(); if (Logger.error_flag_ < 0) return;
+	load_txtr_to_GPU(); if (Logger.error_flag_ < 0) return;
+	//load_hmap_to_GPU(); if (Logger.error_flag_ < 0) return;
 }
 // Метод: Oчистка ресурсов
 __forceinline void emg::render::Exit() {
@@ -745,14 +797,14 @@ __forceinline void emg::render::Exit() {
 	glUseProgram(NULL);
 	glFinish();
 	// Отчистка ресурсов    
-	if (emg_GPU.MeshAttribut_refc_) {
+	if (emg_GPU.MeshAttribs_refc_) {
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_GPU.index_mesh_attribs_);
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-		emg_GPU.MeshAttribut_refc_ = nullptr;
+		emg_GPU.MeshAttribs_refc_ = nullptr;
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
 	}
 	if (emg_GPU.MeshCommands_refc_) {
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_mesh_comands_);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_mesh_commands_);
 		glUnmapBuffer(GL_DRAW_INDIRECT_BUFFER);
 		emg_GPU.MeshCommands_refc_ = nullptr;
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
@@ -764,18 +816,18 @@ __forceinline void emg::render::Exit() {
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
 	}
 	if (emg_GPU.RegionCommands_refc_) {
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_region_command_);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_region_commands_);
 		glUnmapBuffer(GL_DRAW_INDIRECT_BUFFER);
 		emg_GPU.RegionCommands_refc_ = nullptr;
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
 	}
 	glDeleteVertexArrays(1, &emg_GPU.index_mesh_VAO_);
 	glDeleteBuffers(1, &emg_GPU.index_mesh_VBO_);
-	glDeleteBuffers(1, &emg_GPU.index_mesh_comands_);
+	glDeleteBuffers(1, &emg_GPU.index_mesh_commands_);
 	glDeleteBuffers(1, &emg_GPU.index_mesh_attribs_);
 	glDeleteVertexArrays(1, &emg_GPU.index_region_VAO_);
 	glDeleteBuffers(1, &emg_GPU.index_region_VBO_);
-	glDeleteBuffers(1, &emg_GPU.index_region_command_);
+	glDeleteBuffers(1, &emg_GPU.index_region_commands_);
 	glDeleteBuffers(1, &emg_GPU.index_region_offsets_);
 	glDeleteTextures(emg_DrawData.count_texutres_, emg_GPU.textures_index_);
 	glDeleteBuffers(1, &emg_GPU.index_camera_UBO_);
@@ -795,7 +847,7 @@ __forceinline void emg::render::CreateFrame() {
 		while (!emg_DrawData.draw_command_is_free_.exchange(false, std::memory_order_acquire)) {};
 		//Передаем данные о вершинах, с проверкой на переполнение
 		u_8b ByteSize = static_cast<u_8b>(emg_DrawData.count_instaces_) << 5;	// =  X * 32
-		memcpy(emg_GPU.MeshAttribut_refc_, DRW_Attribs, ByteSize);
+		memcpy(emg_GPU.MeshAttribs_refc_, DRW_Attribs, ByteSize);
 		//Отслеживаем изменения в буфере команд отрисовкиs
 		if (emg_DrawData.draw_command_update_.load(std::memory_order_acquire)) {
 			ByteSize = static_cast<u_8b>(emg_DrawData.count_commands_) << 4;	// =  X * 16
@@ -812,13 +864,13 @@ __forceinline void emg::render::CreateFrame() {
 	glUseProgram(emg_GPU.index_draw_region_shader_); // При использовании этой программы значительно просидает ФПС!!!!!!!!!!!!!!!!!
 	{ // Начало работы с шейдером отрисовки регионов
 		glBindVertexArray(emg_GPU.index_region_VAO_);				//Активация вершинного массива и массива команд
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_region_command_);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_region_commands_);
 		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, REGION_COMND_COUNT, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
 	} //Конец работы с шейдером отрисовки регионов
 	glUseProgram(emg_GPU.index_draw_mesh_shader_);				//После рсчета переходим к рендерингу
 	{
 		glBindVertexArray(emg_GPU.index_mesh_VAO_);				//Активация вершинного массива и массива команд
-		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_mesh_comands_);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_mesh_commands_);
 		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, emg_DrawData.count_commands_, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
 	}
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);	//Деактивация

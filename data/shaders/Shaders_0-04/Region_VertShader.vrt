@@ -4,6 +4,8 @@
 layout(location = 0) in vec2 attrib_vertex_Pos;
 layout(location = 1) in vec2 attrib_vertex_Tex;
 
+uniform sampler2DArray uHeightMapArray;
+
 layout(std140, binding = 0) uniform SpaceMatrix {
     mat4 ViewProjMatrix;
 };

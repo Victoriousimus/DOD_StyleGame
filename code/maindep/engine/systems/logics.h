@@ -146,7 +146,7 @@ __forceinline void emg::logics::Init() {
 	Enty_Curs.Attach(&Enty_List);
 
 
-	emg::Data.Logic.queue_add_to_draw_.Push(1);
+	emg::Data.Logic.queue_add_to_draw_.Push(0);
 	/*for (i_4b i = 2; i < 8; ++i) {
 		emg::Data.Logic.queue_add_to_draw_.Push(i);
 	}*/
