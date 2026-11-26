@@ -87,7 +87,9 @@
 #define ENTITY_LIMIT 128 //32768//Сущности
 #define BEHEVIOR_PARAMS 8
 
-#define REGION_COMND_COUNT 5u	//Ландшафт в буфере
+#define REGION_BAS_LENGTH 4u	//Размер в мапселях
+#define REGION_BAS_MAPXEL 4.0f	//Размер одного мапселя
+#define REGION_COMND_COUNT 2u	//Ландшафт в буфере
 #define REGION_DRAWS_COUNT 9u	//Ландшафт в отрисовке
 
 //ИНДЕКСЫ КОДОВ КЛАВИШ

@@ -553,22 +553,32 @@ __forceinline void load_mesh_to_GPU() {
 }
 // Init() < - Подготавливает буфер для мешей террейна
 __forceinline void init_wrld_in_GPU() {
+	/*
+	Реализуем такой замсел:
+		По заданным параметрам генерируем плоские равномерные массивы вершин,
+		так чтобы каждый мапсель(вершина) соответствовала теккселю карты высот.
+		В шейдере выбераем тексель по формуле:
+			(Mapxel + offset)/MAP_SIZE. (где MAP_SIZE - это длиннна одной стороны карты)
+		Смещение же добавляем дискретно, только если выхожим за размер ожного mapxel.
+	*/
 	i_8b bufferByteSize{};
 	emg_GPU.DrawRegionCommands_refc_ = nullptr;
 	emg_GPU.DrawRegionOffsets_refc_ = nullptr;
 	{//+++++++++++++++++[ Vertex Buffer ]++++++++++++++++++
 		const i_4b LOD_COUNT = REGION_COMND_COUNT;
-		const i_4b MAP_MAXIMAL = 128;
+		const i_4b MAP_MAXIMAL = REGION_BAS_LENGTH;
+		const f_4b MAPXEL_SIZE = REGION_BAS_MAPXEL;
 		i_8b full_size = 0;
-		i_8b  LOD_size[LOD_COUNT]{ 0 };
-		f_4b* LOD_data[LOD_COUNT]{ 0 };
+		i_8b  LOD_size[LOD_COUNT]{ 0 };	//Массив количества вершин LOD`ов региона
+		f_4b* LOD_data[LOD_COUNT]{ 0 }; //Массив вершин LOD`ов региона
 		for (i_4b i = 0; i < LOD_COUNT; ++i) {
-			i_4b size = MAP_MAXIMAL >> i;
-			if (size < 1) {
+			i_4b mapxl_count = (MAP_MAXIMAL >> i) ;
+			f_4b mapxl_size = (MAPXEL_SIZE * (1 << i));
+			if (mapxl_count < 1) {
 				Logger.SetError("ERROR::[render.h]: LENDSPACE_BILD_FAIL [ LOD_");
 				Logger.SetError(i); Logger.SetError(" <-> SIZE < 1 ]\n");
 			}
-			LOD_data[i] = bild_region(&LOD_size[i], size, (1.0f * static_cast<f_4b>(1<<i)));
+			LOD_data[i] = bild_region(&LOD_size[i], mapxl_count, mapxl_size);
 			full_size += LOD_size[i];
 			if (!LOD_data[i] || LOD_size[i] < 24) {
 				Logger.SetError("ERROR::[render.h]: LENDSPACE_BILD_FAIL [ LOD_");
@@ -598,7 +608,6 @@ __forceinline void init_wrld_in_GPU() {
 			all_VertexArray[i] = LOD_data[s][p];
 			++p;
 		}
-
 		for (i_8b i = 0; i < LOD_COUNT; ++i) {
 			emg_Render.RegionCommands_[i].inst_first = i > 0 ?
 				emg_Render.RegionCommands_[i - 1].inst_count +
@@ -608,11 +617,9 @@ __forceinline void init_wrld_in_GPU() {
 				emg_Render.RegionCommands_[i - 1].vert_first : 0;
 			emg_Render.RegionCommands_[i].inst_count = 1;
 			emg_Render.RegionCommands_[i].vert_count = static_cast<u_4b>(LOD_size[i] >> 2);
-			emg_Render.RegionOffsets_[i].x = static_cast<f_4b>(MAP_MAXIMAL * i);
+			emg_Render.RegionOffsets_[i].x = static_cast<f_4b>(MAP_MAXIMAL * MAPXEL_SIZE * i);
 			emg_Render.RegionOffsets_[i].y = 0.0f;
 		}
-
-
 
 		bufferByteSize = full_size * sizeof(f_4b);
 		glGenVertexArrays(1, &emg_GPU.index_regions_VAO_);

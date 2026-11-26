@@ -49,7 +49,7 @@ i_4b main() {
 	emg::Data.Render.Camera.fov_ = 75.0f;
 	emg::Data.Render.Camera.far_ = 4096.0f;//16*96
 	emg::Data.Render.Camera.near_ = 0.1f;
-	emg::Data.Render.Camera.velocity_ = 0.08f;
+	emg::Data.Render.Camera.velocity_ = 0.16f;
 
 	if (Logger.error_flag_ >= 0) emg::window::Init();
 	if (Logger.error_flag_ >= 0) emg::render::Init();
