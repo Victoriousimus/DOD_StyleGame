@@ -15,20 +15,20 @@ namespace lgc {
 	class ITerrain {
 	public:
 		u_2b size_;
-		virtual u_1b Typ(mth::U2_2pos& pos) = 0;
+		virtual u_1b Typ(gmth::U2_2pos& pos) = 0;
 		virtual u_1b Typ(u_2b indx) = 0;
 		virtual void Init(img::CStbImg& image, u_2b size) = 0;
 		virtual void Print() = 0;
 		virtual void Free() = 0;
 	};
 	class IWorld {
-		#define SMngr mth::SI2b_ManagerList
+		#define SMngr gmth::SI2b_ManagerList
 		public:
 			virtual void Print() = 0;
-			virtual i_2b Del(mth::U2_2pos& pos) = 0;
-			virtual i_2b Set(mth::U2_2pos& pos, img::CStbImg& _img_ptr) = 0;
-			virtual SMngr* Entyes(mth::U2_2pos& pos) = 0;
-			virtual t_sym  Region(mth::U2_2pos& pos) = 0;
+			virtual i_2b Del(gmth::U2_2pos& pos) = 0;
+			virtual i_2b Set(gmth::U2_2pos& pos, img::CStbImg& _img_ptr) = 0;
+			virtual SMngr* Entyes(gmth::U2_2pos& pos) = 0;
+			virtual t_sym  Region(gmth::U2_2pos& pos) = 0;
 		#undef SMngr
 	};
 }

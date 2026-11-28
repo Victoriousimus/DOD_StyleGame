@@ -7,9 +7,9 @@
 #define ToHide(eIndexToDraw) emg::render::RemoveInDrawPipline(eIndexToDraw);
 
 enum WAYMASK {
-	X = mth::SInstnOffSet::WAYMASK::X,
-	Y = mth::SInstnOffSet::WAYMASK::Y,
-	Z = mth::SInstnOffSet::WAYMASK::Z
+	X = gmth::SInstnOffSet::WAYMASK::X,
+	Y = gmth::SInstnOffSet::WAYMASK::Y,
+	Z = gmth::SInstnOffSet::WAYMASK::Z
 };
 __forceinline Bool online_process(i_2b& _indx) {
 	return _indx > ENTITY_LIMIT;

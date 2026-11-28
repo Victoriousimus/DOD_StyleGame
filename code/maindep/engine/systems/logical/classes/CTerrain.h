@@ -3,11 +3,11 @@ namespace lgc::classes {
 	class CTerrain : public lgc::ITerrain {
 	private:
 		u_1b** HeightMap_;
-		mth::SI2b_ForwardList units;
+		gmth::SI2b_ForwardList units;
 	public:
 		CTerrain() : HeightMap_(nullptr) { size_ = 0; }
 		~CTerrain() { Free(); }
-		u_1b Typ(mth::U2_2pos& pos) override {
+		u_1b Typ(gmth::U2_2pos& pos) override {
 			return HeightMap_[pos.x][pos.y];
 		}
 		void Init(img::CStbImg& image, u_2b size) override {

@@ -124,7 +124,7 @@ __forceinline f_4b* bild_region(i_8b* array_size, i_4b quad_w, f_4b stride_c) {
 	return Array;
 }
 //Загрузка шейдерных программ
-__forceinline void load_saheder_progs(mth::SLoadingShaders* Shaders) {
+__forceinline void load_saheder_progs(gmth::SLoadingShaders* Shaders) {
 	i_4b& success    = Shaders->success_loading;
 	u_4b& shdr_Cmp   = Shaders->compute_Shader;
 	u_4b& shdr_m_Vrt = Shaders->mesh_VertShader;
@@ -227,8 +227,8 @@ __forceinline void load_saheder_progs(mth::SLoadingShaders* Shaders) {
 // Загрузка массивов аттрибутов и вершин моделей
 __forceinline void load_all_vetex_data(f_4b** result_array, i_8b* array_size, i_4b* mesh_count) {
 	f_4b* all_VertexAttribsArray;
-	f_4b** vecArr = nullptr;	// указатель на массивы вершин
-	u_8b* vecLen = nullptr;		// указатели на длинны массивов
+	f_4b** ModelsArray = nullptr;	// указатель на массивы вершин
+	u_8b* VertexCount = nullptr;		// указатели на длинны массивов
 	u_8b lengt_accum = 0;
 	i_4b model_count = 0;
 	t_wrd fileNames[MODELS_LIMIT] = {0};
@@ -271,47 +271,45 @@ __forceinline void load_all_vetex_data(f_4b** result_array, i_8b* array_size, i_
 	} 
 	free(fileText);
 	// Инициализируем временное хранилище памяти для штучных мешей, для дальнейшего объеденения
-	vecArr = new f_4b*[model_count];	// <- Массив указателей на масссивы вершин
-	vecLen = new u_8b[model_count];	// <- Массив длин массивов по указателю
-	if (!vecArr || !vecLen) {
-		Logger.SetError("ERROR::[ render.h ]:vecArr = malloc(model_count * size); vecLen = malloc(model_count * size)\n");
+	ModelsArray = new f_4b*[model_count];	// <- Массив указателей на масссивы вершин
+	VertexCount = new u_8b[model_count];	// <- Массив длин массивов по указателю
+	if (!ModelsArray || !VertexCount) {
+		Logger.SetError("ERROR::[ render.h ]:ModelsArray = malloc(model_count * size); VertexCount = malloc(model_count * size)\n");
 		for (i_4b i = 0; i < model_count; ++i) { delete[] fileNames[i]; }
-		if(vecLen) delete[] vecLen;
-		if(vecArr) delete[] vecArr;
+		if(VertexCount) delete[] VertexCount;
+		if(ModelsArray) delete[] ModelsArray;
 		*result_array = nullptr;
 		*mesh_count = 0;
 		*array_size = 0;
 		return;
 	}
 	lengt_accum = 0;
-	for (i_4b i = 0; i < model_count; ++i) { vecArr[i] = nullptr; }
+	for (i_4b i = 0; i < model_count; ++i) { ModelsArray[i] = nullptr; }
 	// Загружаем во вершины в массивы и формируем под него DrawComand
 	COUT_CMD( std::cout << "--------------------------------------------------\n" << std::endl );
 	for (i_4b i = 0; i < model_count; ++i) {
-		vecArr[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &vecLen[i]));// vecLen[i] - будет записана длинна массива в байтах
+		ModelsArray[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &VertexCount[i]));// VertexCount[i] - будет записана длинна массива в байтах
 		delete[] fileNames[i];
-		if (!vecArr[i]) {
-			Logger.SetError("ERROR::[ render.h ]:vecArr[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &vertx_count));\n");
+		if (!ModelsArray[i]) {
+			Logger.SetError("ERROR::[ render.h ]:ModelsArray[i] = static_cast<f_4b*>(iof::load_file_ultrafast(fileNames[i], &vertx_count));\n");
 			// Подчищаем временные хранилища мешей
-			for (i_4b j = i; j > -1; --j) { iof::free_ultrafast_loaded_data(vecArr[j]); }
+			for (i_4b j = i; j > -1; --j) { iof::free_ultrafast_loaded_data(ModelsArray[j]); }
 			for (i_4b j = 0; j < model_count; ++j) { delete[] fileNames[j]; }
-			delete[] vecLen;
-			delete[] vecArr;
+			delete[] VertexCount;
+			delete[] ModelsArray;
 			*result_array = nullptr; 
 			*mesh_count = 0;
 			*array_size = 0;
 			return;
 		}
 		DRW_Commands[i].inst_count = 0; // Количество инстансов
-		DRW_Commands[i].vert_count = static_cast<u_4b>(vecLen[i]) >> 5;	// Количество вершин для примитива
-		DRW_Commands[i].inst_first = i < 1 ? 0 : // Базовый инстанс (добавляется к gl_instance_index)
-			DRW_Commands[i - 1].inst_first +
-			DRW_Commands[i - 1].inst_count;
+		DRW_Commands[i].inst_first = 0; // Базовый инстанс (добавляется к gl_instance_index)
+		DRW_Commands[i].vert_count = static_cast<u_4b>(VertexCount[i]) >> 5;	// Количество вершин для примитива
 		DRW_Commands[i].vert_first = i < 1 ? 0 :	// Начальный индекс в вершинном массиве
 			DRW_Commands[i - 1].vert_first +
 			DRW_Commands[i - 1].vert_count;
-		vecLen[i] = static_cast<u_4b>(vecLen[i] >> 2);			// Сдвиг чтобы сичтать f_4b
-		lengt_accum += vecLen[i];
+		VertexCount[i] = static_cast<u_4b>(VertexCount[i] >> 2);	// Сдвиг чтобы сичтать f_4b
+		lengt_accum += VertexCount[i];
 		COUT_CMD(
 				std::cout
 				<< "------------------------------------\n"
@@ -327,23 +325,34 @@ __forceinline void load_all_vetex_data(f_4b** result_array, i_8b* array_size, i_
 	all_VertexAttribsArray = static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)));
 	if (!all_VertexAttribsArray) {
 		Logger.SetError("ERROR::[ render.h ]: static_cast<f_4b*>(malloc(lengt_accum * sizeof(f_4b)))\n");
-		for (i_4b i = 0; i < model_count;++i) { iof::free_ultrafast_loaded_data(vecArr[i]); }
-		delete[] vecLen;
-		delete[] vecArr;
+		for (i_4b i = 0; i < model_count;++i) { iof::free_ultrafast_loaded_data(ModelsArray[i]); }
+		delete[] VertexCount;
+		delete[] ModelsArray;
 		*result_array = nullptr;
 		*mesh_count = 0;
 		*array_size = 0;
 		return;
 	};
-	for (i_4b OnVec = 0, p = 0, i = 0; i < lengt_accum; ++i, ++p) {
-		if (p >= vecLen[OnVec]) {
-			iof::free_ultrafast_loaded_data(vecArr[OnVec]);
-			p = 0; ++OnVec;
+	for (i_4b SelestedModel = 0, p = 0, i = 0; i < lengt_accum; ++i, ++p) {
+		if (p >= VertexCount[ SelestedModel ]) {
+			iof::free_ultrafast_loaded_data(ModelsArray[ SelestedModel ]);
+			p = 0; ++SelestedModel;
+			if (SelestedModel >= model_count) {
+				Logger.SetError("ERROR::[ render.h ]: SelestedModel >= model_count\n");
+				free(all_VertexAttribsArray);
+				all_VertexAttribsArray = nullptr;
+				lengt_accum = 0;
+				model_count = 0;
+				break;
+			}
 		}
-		all_VertexAttribsArray[i] = (vecArr[OnVec])[p];
+		all_VertexAttribsArray[i] = (ModelsArray[SelestedModel])[p];
 	}
-	delete[] vecLen;
-	delete[] vecArr;
+	if (!all_VertexAttribsArray) {
+		Logger.SetError("ERROR::[ render.h ]: all_VertexAttribsArray = NULL_PTR\n");
+	}
+	delete[] VertexCount;
+	delete[] ModelsArray;
 	*array_size = lengt_accum;
 	*mesh_count = model_count;
 	*result_array = all_VertexAttribsArray;
@@ -408,7 +417,7 @@ __forceinline void init_view_matrix() {
 
 // Init() < - Загрузка шейдера расчета и отрисовки в GPU
 __forceinline void load_prog_to_GPU() {
-	mth::SLoadingShaders Prog{ 0 };
+	gmth::SLoadingShaders Prog{ 0 };
 	load_saheder_progs(&Prog);
 	if (!Prog.mesh_FragShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [MODELS FRAGMENT SHADER]\n");
 	if (!Prog.mesh_VertShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [MODELS VERTEX SHADER]\n");
@@ -483,7 +492,7 @@ __forceinline void load_mesh_to_GPU() {
 		f_4b* All_ModelsVertexes;
 		load_all_vetex_data(&All_ModelsVertexes, &float_count, &emg_DrawData.count_commands_);
 		if (!All_ModelsVertexes || float_count < 24) {
-			Logger.SetError("ERROR::[render.h]: MODELS_LOAD_FAIL [ float_count < 24 ]\n");
+			Logger.SetError("ERROR::[render.h]: MODELS_LOAD_FAIL [ All_ModelsVertexes == NULL | float_count < 24 ]\n");
 			return;
 		}
 		bufferByteSize = float_count * sizeof(f_4b);
@@ -521,7 +530,7 @@ __forceinline void load_mesh_to_GPU() {
 		}
 	}
 	{//+++++++++++++++++[ Attrib Buffer ]++++++++++++++++++
-		bufferByteSize = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(mth::SInstnAttrib);
+		bufferByteSize = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(gmth::SInstnAttrib);
 		u_4b type = GL_SHADER_STORAGE_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
 		emg_GPU.MeshAttribs_refc_ = bild_refc_storage(&emg_GPU.index_mesh_attribs_, bufferByteSize, emg::Layout::Attrib, type, flag);
 		if (!emg_GPU.MeshAttribs_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-MeshAttribs_refc_\n");
@@ -532,7 +541,7 @@ __forceinline void load_mesh_to_GPU() {
 		}
 	}
 	{//+++++++++++++++++[ Command Buffer ]+++++++++++++++++
-		bufferByteSize = static_cast<i_8b>(MODELS_LIMIT) * sizeof(mth::SDrawCommand);
+		bufferByteSize = static_cast<i_8b>(MODELS_LIMIT) * sizeof(gmth::SDrawCommand);
 		u_4b type = GL_DRAW_INDIRECT_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
 		emg_GPU.MeshCommands_refc_ = bild_refc_storage(&emg_GPU.index_mesh_commands_, bufferByteSize, -1, type, flag);
 		if (!emg_GPU.MeshCommands_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-MeshCommands_refc_\n");
@@ -751,7 +760,6 @@ __forceinline void load_hmap_to_GPU() {
 	free(fileText);
 	if (!GeometryfileName) {
 		Logger.SetError("ERROR::[ render.h ]: load_hmap_to_GPU(): map:= : fileName = malloc(64)\n");
-		free(fileText);
 		return;
 	}
 	glGenTextures(1, &emg_GPU.index_region_geometry_);
@@ -791,11 +799,8 @@ __forceinline void emg::render::Init() {
 }
 // Метод: Oчистка ресурсов
 __forceinline void emg::render::Exit() {
-	// Дождаться завершения всех операций GPU
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	glUseProgram(NULL);
 	glFinish();
-	// Отчистка ресурсов    
+	glUseProgram(NULL);
 	if (emg_GPU.MeshAttribs_refc_) {
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_GPU.index_mesh_attribs_);
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -820,20 +825,34 @@ __forceinline void emg::render::Exit() {
 		emg_GPU.RegionCommands_refc_ = nullptr;
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
 	}
-	glDeleteVertexArrays(1, &emg_GPU.index_mesh_VAO_);
-	glDeleteBuffers(1, &emg_GPU.index_mesh_VBO_);
-	glDeleteBuffers(1, &emg_GPU.index_mesh_commands_);
-	glDeleteBuffers(1, &emg_GPU.index_mesh_attribs_);
-	glDeleteVertexArrays(1, &emg_GPU.index_region_VAO_);
-	glDeleteBuffers(1, &emg_GPU.index_region_VBO_);
-	glDeleteBuffers(1, &emg_GPU.index_region_commands_);
-	glDeleteBuffers(1, &emg_GPU.index_region_offsets_);
-	glDeleteTextures(emg_DrawData.count_texutres_, emg_GPU.textures_index_);
-	glDeleteBuffers(1, &emg_GPU.index_camera_UBO_);
-	glDeleteBuffers(1, &emg_GPU.index_mesh_matrix_);
-	glDeleteProgram(emg_GPU.index_compute_shader_);
-	glDeleteProgram(emg_GPU.index_draw_mesh_shader_);
-	glDeleteProgram(emg_GPU.index_draw_region_shader_);
+	if (emg_GPU.index_mesh_VAO_)
+		glDeleteVertexArrays(1, &emg_GPU.index_mesh_VAO_);
+	if (emg_GPU.index_region_VAO_)
+		glDeleteVertexArrays(1, &emg_GPU.index_region_VAO_);
+	if (emg_GPU.index_mesh_VBO_)
+		glDeleteBuffers(1, &emg_GPU.index_mesh_VBO_);
+	if (emg_GPU.index_region_VBO_)
+		glDeleteBuffers(1, &emg_GPU.index_region_VBO_);
+	if (emg_GPU.index_mesh_commands_)
+		glDeleteBuffers(1, &emg_GPU.index_mesh_commands_);
+	if (emg_GPU.index_mesh_attribs_)
+		glDeleteBuffers(1, &emg_GPU.index_mesh_attribs_);
+	if (emg_GPU.index_region_commands_)
+		glDeleteBuffers(1, &emg_GPU.index_region_commands_);
+	if (emg_GPU.index_region_offsets_)
+		glDeleteBuffers(1, &emg_GPU.index_region_offsets_);
+	if (emg_GPU.index_camera_UBO_)
+		glDeleteBuffers(1, &emg_GPU.index_camera_UBO_);
+	if (emg_GPU.index_mesh_matrix_)
+		glDeleteBuffers(1, &emg_GPU.index_mesh_matrix_);
+	if (emg_DrawData.count_texutres_)
+		glDeleteTextures(emg_DrawData.count_texutres_, emg_GPU.textures_index_);
+	if (emg_GPU.index_compute_shader_)
+		glDeleteProgram(emg_GPU.index_compute_shader_);
+	if (emg_GPU.index_draw_mesh_shader_)
+		glDeleteProgram(emg_GPU.index_draw_mesh_shader_);
+	if (emg_GPU.index_draw_region_shader_)
+		glDeleteProgram(emg_GPU.index_draw_region_shader_);
 }
 // Метод: Отрисовка сцены
 __forceinline void emg::render::CreateFrame() {
@@ -866,13 +885,13 @@ __forceinline void emg::render::CreateFrame() {
 	{ // Начало работы с шейдером отрисовки регионов
 		glBindVertexArray(emg_GPU.index_region_VAO_);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_region_commands_);
-		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, REGION_COMND_COUNT, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
+		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, REGION_COMND_COUNT, sizeof(gmth::SDrawCommand)); //Отрисовка всех инстансов
 	}
 	glUseProgram(emg_GPU.index_draw_mesh_shader_);
 	{ // Начало работы с шейдером отрисовки сущностей
 		glBindVertexArray(emg_GPU.index_mesh_VAO_);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, emg_GPU.index_mesh_commands_);
-		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, emg_DrawData.count_commands_, sizeof(mth::SDrawCommand)); //Отрисовка всех инстансов
+		glMultiDrawArraysIndirect(GL_TRIANGLES, 0, emg_DrawData.count_commands_, sizeof(gmth::SDrawCommand)); //Отрисовка всех инстансов
 	}
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, NULL);
@@ -900,8 +919,8 @@ __forceinline void emg::render::CreateFrame() {
 #define UnitPositionData emg::Data.Logic.unit_global_step_
 //Добавить сущность в рендер : emg::Data.Render.essence_add_to_show_id_
 __forceinline void emg::render::InsertInDrawPipline(u_2b entityID) {
-	mth::SEssenceMeta& ToShow_EntyData = UnitVisualData[entityID];
-	mth::U2_2pos ToShow_EntyPoint = UnitPositionData[entityID];
+	gmth::SEssenceMeta& ToShow_EntyData = UnitVisualData[entityID];
+	gmth::U2_2pos ToShow_EntyPoint = UnitPositionData[entityID];
 	std::atomic<Bool>& IsFree = emg::Data.Render.draw_command_is_free_;
 	std::atomic<Bool>& Update = emg::Data.Render.draw_command_update_;
 	i_4b& InstCount = emg::Data.Render.count_instaces_;
@@ -948,7 +967,7 @@ __forceinline void emg::render::InsertInDrawPipline(u_2b entityID) {
 #undef UnitPositionData emg::Data.Logic.unit_global_step_
 //Удалить сущность из рендера : emg::Data.Render.essence_add_to_hide_id_
 __forceinline void emg::render::RemoveInDrawPipline(u_2b entityID) {
-	mth::SEssenceMeta& ToHide_EntyData = UnitVisualData[entityID];
+	gmth::SEssenceMeta& ToHide_EntyData = UnitVisualData[entityID];
 	std::atomic<Bool>& IsFree = emg::Data.Render.draw_command_is_free_;
 	std::atomic<Bool>& Update = emg::Data.Render.draw_command_update_;
 	i_4b& WorkCount = emg::Data.Render.count_work_group_;

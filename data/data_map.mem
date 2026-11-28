@@ -11,14 +11,14 @@
 	#FRAGMENT:
 		rfg:= data/shaders/Shaders_0-04/Region_FragShader.frg*
 		
+#TEXTURES:
+	#ID_000	atl:= data/models/textures/atlas.png*
+	
+#LENSPACE_TYTICAL:
+	map:= data/models/regions/m_000_000.png*
+	
 #MESHES:
 	ID_000	msh:= data/models/meshes/cube.vtn*
 	ID_001	msh:= data/models/meshes/caty.vtn*
 	ID_002	msh:= data/models/meshes/foxy.vtn*
 	ID_003	msh:= data/models/meshes/vert.vtn*
-
-#TEXTURES:
-	ID_000	atl:= data/models/textures/atlas.png*
-	
-#LENSPACE_TYTICAL:
-	map:= data/models/regions/m_000_000.png*

@@ -2,15 +2,15 @@ namespace lgc::classes {
 
 #ifdef WORLD_SIZE
 	class CWorld : public lgc::IWorld {
-#define	SMngr mth::SI2b_ManagerList
-#define SList mth::SI2b_ForwardList
+#define	SMngr gmth::SI2b_ManagerList
+#define SList gmth::SI2b_ForwardList
 	private:
 		struct CRegion {
 			t_sym* Cells_[REGION_SIZE];
 			SList Units_;
 			t_sym Typ_;
 			friend lgc::IWorld;
-			i_2b Init(mth::U2_2pos& pos, img::CStbImg& _img_ptr) {
+			i_2b Init(gmth::U2_2pos& pos, img::CStbImg& _img_ptr) {
 				DBGONLY(if (pos.x > REGION_SIZE || pos.y > REGION_SIZE) { return -1; });
 				if (!Cells_[pos.x]) Cells_[pos.y] = new t_sym[REGION_SIZE];
 				return 0;
@@ -47,26 +47,26 @@ namespace lgc::classes {
 			}
 			std::cout << std::dec << std::endl;
 		}
-		i_2b Del(mth::U2_2pos& pos) override {
+		i_2b Del(gmth::U2_2pos& pos) override {
 			if (pos.x >= WORLD_SIZE || pos.y >= WORLD_SIZE) return -1;
 			if (!Regions_[pos.x][pos.y]) return -2;
 			delete Regions_[pos.x][pos.y];
 			Regions_[pos.x][pos.y] = nullptr;
 			return 0;
 		}
-		i_2b Set(mth::U2_2pos& pos, img::CStbImg& _img_ptr)  override {
+		i_2b Set(gmth::U2_2pos& pos, img::CStbImg& _img_ptr)  override {
 			if (pos.x >= WORLD_SIZE || pos.y >= WORLD_SIZE) return -1;
 			if (!Regions_[pos.x][pos.y]) Regions_[pos.x][pos.y] = new CRegion();
 			Regions_[pos.x][pos.y]->Init(pos, _img_ptr);
 			return 0;
 		}
-		SMngr* Entyes(mth::U2_2pos& pos) override {
+		SMngr* Entyes(gmth::U2_2pos& pos) override {
 			if (pos.x >= WORLD_SIZE || pos.y >= WORLD_SIZE) return nullptr;
 			if (!Regions_[pos.x][pos.y]) return nullptr;
 			UnitListManager_.Attach( &(Regions_[pos.x][pos.y]->Units_) );
 			return &UnitListManager_;
 		}
-		t_sym  Region(mth::U2_2pos& pos) override {
+		t_sym  Region(gmth::U2_2pos& pos) override {
 			if (pos.x >= WORLD_SIZE || pos.y >= WORLD_SIZE) return '\0';
 			if (!Regions_[pos.x][pos.y]) return '\0';
 			return '.';

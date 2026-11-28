@@ -35,7 +35,7 @@ typedef glm::vec4 v4_16b;
 typedef glm::mat4 m4_64b;
 
 
-namespace mth {
+namespace gmth {
 	struct U2_2pos {
 		u_2b x;
 		u_2b y;

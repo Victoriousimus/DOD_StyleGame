@@ -40,7 +40,7 @@
 #define GLFW_INCLUDE_NONE			// Убираем сторонне подкулючение GLFW
 #define WIN32_LEAN_AND_MEAN			// Убирает редко используемые части Windows API
 #define USE_DUMB_OPTIMIZATE_MAP		// Поиск пути по умолчанию считает ячейку легкопроходимой
-#define SPoint2u mth::U2_2pos
+#define SPoint2u gmth::U2_2pos
 
 #ifdef EMG_ALLOC_STDOUT
 #define _CRTDBG_MAP_ALLOC
@@ -67,7 +67,7 @@
 #include <GLM/gtc/matrix_transform.hpp>
 
 //Подключаем локальные библиотеки
-#include "engine/share/math.h"	//namespace mth
+#include "engine/share/gmth.h"	//namespace gmth
 #include "engine/share/alrm.h"	//struct errlog
 #include "engine/share/imag.h"	//namespace mth
 #include "engine/share/file.h"	//namespace iof
@@ -90,8 +90,8 @@
 #define REGION_BAS_LENGTH 128u	//Размер в мапселях
 #define REGION_BAS_MAPXEL 1.0f	//Размер одного мапселя
 #define REGION_COMND_COUNT 5u	//Ландшафт в буфере
+#define REGION_HMAPS_COUNT 9u	//Ландшафт в отрисовке
 #define REGION_DRAWS_COUNT 9u	//Ландшафт в отрисовке
-#define REGION_HMAPS_COUNT 16u	//Ландшафт в отрисовке
 
 //ИНДЕКСЫ КОДОВ КЛАВИШ
 #define EMG_INPUT_EXIT 0
@@ -113,14 +113,6 @@
 #endif
 
 namespace emg {
-	enum FilesType {
-		MODELS_CMP = 0,
-		MODELS_VRT = 1,
-		MODELS_FRG = 2,
-		REGION_VRT = 3,
-		REGION_FRG = 4,
-		MODELS_DATA = 5,
-	};
 	enum Layout {
 		MshPos = 0, MshNrm = 1, MshTex = 2,
 		RegPos = 0, RegTex = 1,
@@ -130,12 +122,11 @@ namespace emg {
 	struct {//  LIMIT: 12 544 / 1 073 741 824 bytes
 		public:
 			struct Render_data_type { //render;
-				mth::SInstnAttrib MeshAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
-				mth::SDrawCommand MeshCommands_[MODELS_LIMIT]{};	// Массив комманд
-				mth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};		// Массив плоских смещений регионов
-				mth::SDrawCommand RegionCommands_[REGION_COMND_COUNT]{};	// Массив комманд отрисовки для каждого LOD
+				gmth::SInstnAttrib MeshAttribs_[ONLINE_LIMIT]{};	// Массив атрибутов
+				gmth::SDrawCommand MeshCommands_[MODELS_LIMIT]{};	// Массив комманд
+				gmth::F4_2pos	  RegionOffsets_[REGION_DRAWS_COUNT]{};		// Массив плоских смещений регионов
+				gmth::SDrawCommand RegionCommands_[REGION_COMND_COUNT]{};	// Массив комманд отрисовки для каждого LOD
 				struct GPU_render_type{
-					//+++++++++++++++++++++[LAYOUT]+++++++++++++++++++++
 					//+++++++++++++++++++++[MODELS]+++++++++++++++++++++
 					PMem MeshCommands_refc_{};		// &< Указатель на память (GPU) массива команд 
 					PMem MeshAttribs_refc_{};		// &< Указатель на память (GPU) массива атрибутов
@@ -203,7 +194,7 @@ namespace emg {
 				//---------------------------------------
 				} Params;
 				struct {
-					mth::F8_2pos cursor_displacement_{};
+					gmth::F8_2pos cursor_displacement_{};
 					u_1b key_flags_[KEYS_LIMIT]{};
 				} Input;
 				struct {//Полуразмеры окна
@@ -217,14 +208,13 @@ namespace emg {
 				//i_2b : 1; //Макс.Разрешение
 			} Window;
 			struct {
-				i_1b* HmapsData[REGION_DRAWS_COUNT];
-				mth::U2_2pos HmapsPos[ENTITY_LIMIT]{};
-
-				mth::U2_2pos	  unit_global_step_[ENTITY_LIMIT]{};	// Массив данных позиции
-				mth::SEssenceMeta unit_visual_data_[ENTITY_LIMIT]{};	// Массив данных модели
-				mth::SI2b_ArrQueue queue_add_to_draw_{};
-				mth::SI2b_ManagerList online_manager_list_{};
-				mth::SI2b_ForwardList online_list_{};
+				i_1b* HmapsData_[REGION_HMAPS_COUNT]{};
+				gmth::U2_2pos HmapsPos_[REGION_HMAPS_COUNT]{};
+				gmth::U2_2pos unit_global_step_[ENTITY_LIMIT]{};	// Массив данных позиции
+				gmth::SEssenceMeta unit_visual_data_[ENTITY_LIMIT]{};	// Массив данных модели
+				gmth::SI2b_ArrQueue queue_add_to_draw_{};
+				gmth::SI2b_ManagerList online_manager_list_{};
+				gmth::SI2b_ForwardList online_list_{};
 			} Logic;
 			struct {
 				c_wrd files_data_map_{};
@@ -253,20 +243,6 @@ namespace emg {
 		__forceinline extern void WorldMamagerTic();
 		__forceinline extern void LocalManagerTic();
 	}
-	namespace gamedata {
-		struct GameDataMap {
-			u_4b models_mesh_count_;
-			t_wrd models_mesh_array_[MODELS_LIMIT];
-			t_wrd terrain_base_name_;
-			t_wrd texture_atlas_name_;
-			t_wrd models_cmp_shader_names_;
-			t_wrd models_vrt_shader_names_;
-			t_wrd models_frg_shader_names_;
-			t_wrd region_vrt_shader_names_;
-			t_wrd region_frg_shader_names_;
-		};
-		__forceinline extern GameDataMap Load();
-	}
 	namespace sounds {
 	}
 }
@@ -275,6 +251,5 @@ namespace emg {
 #include "engine/systems/render.h"
 #include "engine/systems/sounds.h"
 #include "engine/systems/logics.h"
-#include "engine/systems/iofile.h"
 
 #endif //SIMPLE_ENGINE_FOR_GAME_LIBS
