@@ -113,6 +113,20 @@
 #endif
 
 namespace emg {
+	enum FilesType {
+		MODELS_CMP = 0,
+		MODELS_VRT = 1,
+		MODELS_FRG = 2,
+		REGION_VRT = 3,
+		REGION_FRG = 4,
+		MODELS_DATA = 5,
+	};
+	enum Layout {
+		MshPos = 0, MshNrm = 1, MshTex = 2,
+		RegPos = 0, RegTex = 1,
+		VwProj = 0, Offset = 1,
+		Attrib = 2, Matrix = 3
+	};
 	struct {//  LIMIT: 12 544 / 1 073 741 824 bytes
 		public:
 			struct Render_data_type { //render;
@@ -122,12 +136,6 @@ namespace emg {
 				mth::SDrawCommand RegionCommands_[REGION_COMND_COUNT]{};	// Массив комманд отрисовки для каждого LOD
 				struct GPU_render_type{
 					//+++++++++++++++++++++[LAYOUT]+++++++++++++++++++++
-					enum Layout {
-						MshPos = 0, MshNrm = 1, MshTex = 2,
-						RegPos = 0, RegTex = 1,
-						VwProj = 0, Offset = 1,
-						Attrib = 2, Matrix = 3
-					};
 					//+++++++++++++++++++++[MODELS]+++++++++++++++++++++
 					PMem MeshCommands_refc_{};		// &< Указатель на память (GPU) массива команд 
 					PMem MeshAttribs_refc_{};		// &< Указатель на память (GPU) массива атрибутов
@@ -138,7 +146,6 @@ namespace emg {
 					u_4b index_mesh_attribs_{};			// Индекс массива аттрибутов в шейдере
 					u_4b index_draw_mesh_shader_{};		// Индекс шейдера отрисовки моделей
 					//+++++++++++++++++++++[REGION]+++++++++++++++++++++
-					PMem RegionGeometry_refc_[REGION_HMAPS_COUNT]{};	// &< Указатель на память (GPU) массива смещений
 					PMem RegionCommands_refc_{};	// &< Указатель на память (GPU) массива команд
 					PMem RegionOffsets_refc_{};		// &< Указатель на память (GPU) массива смещений
 					u_4b index_region_VAO_{};			// Индекс вершинного массива моделей местности
@@ -210,6 +217,9 @@ namespace emg {
 				//i_2b : 1; //Макс.Разрешение
 			} Window;
 			struct {
+				i_1b* HmapsData[REGION_DRAWS_COUNT];
+				mth::U2_2pos HmapsPos[ENTITY_LIMIT]{};
+
 				mth::U2_2pos	  unit_global_step_[ENTITY_LIMIT]{};	// Массив данных позиции
 				mth::SEssenceMeta unit_visual_data_[ENTITY_LIMIT]{};	// Массив данных модели
 				mth::SI2b_ArrQueue queue_add_to_draw_{};
@@ -218,6 +228,7 @@ namespace emg {
 			} Logic;
 			struct {
 				c_wrd files_data_map_{};
+				c_wrd geometry_names_{};
 			} Files;
 	} Data;
 	namespace window { // ПРОЦЕДУРЫ ОКНA
@@ -242,6 +253,20 @@ namespace emg {
 		__forceinline extern void WorldMamagerTic();
 		__forceinline extern void LocalManagerTic();
 	}
+	namespace gamedata {
+		struct GameDataMap {
+			u_4b models_mesh_count_;
+			t_wrd models_mesh_array_[MODELS_LIMIT];
+			t_wrd terrain_base_name_;
+			t_wrd texture_atlas_name_;
+			t_wrd models_cmp_shader_names_;
+			t_wrd models_vrt_shader_names_;
+			t_wrd models_frg_shader_names_;
+			t_wrd region_vrt_shader_names_;
+			t_wrd region_frg_shader_names_;
+		};
+		__forceinline extern GameDataMap Load();
+	}
 	namespace sounds {
 	}
 }
@@ -250,6 +275,6 @@ namespace emg {
 #include "engine/systems/render.h"
 #include "engine/systems/sounds.h"
 #include "engine/systems/logics.h"
-//#include "engine/systems/iofile.h" - пока-что упраздним, потом подумаем
+#include "engine/systems/iofile.h"
 
 #endif //SIMPLE_ENGINE_FOR_GAME_LIBS

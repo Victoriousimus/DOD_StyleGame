@@ -3,14 +3,14 @@
 #define _EMG_MATH_ATTACH_
 
 #define METER_TO_FLOAT 0.000247f
-#define MTH_PI 3.1415926f		//×èñëî PI
-#define MTH_ANGLE_R 0.0174532f	//Óãëîâîé êîýôèöèåíò PI/180
-#define MTH_ANGLE_A 57.295779f	//Óãëîâîé êîýôèöèåíò 180/PI
-#define MTH_RADIANS 6.2831853f	//×èñëî 2 * PI
-#define MTH_MIN_ANG_Y -1.57075f	//×èñëî -PI/2
-#define MTH_MAX_ANG_Y  1.57075f	//×èñëî  PI/2
-#define MTH_ANG360(ang) ((int)(ang) % 360) + ((ang) - (int)(ang))					//Ïðèâåäåíèå ãðàäóèðîâàííîãî óãëà
-#define MTH_ANGRAD(ang) (f_4b)((int)((ang)*10000000) % 62831853)/10000000.0f	//Ïðèâåäåíèå ðàäèàëüíîãî óãëà
+#define MTH_PI 3.1415926f	
+#define MTH_ANGLE_R 0.0174532f
+#define MTH_ANGLE_A 57.295779f
+#define MTH_RADIANS 6.2831853f
+#define MTH_MIN_ANG_Y -1.57075f
+#define MTH_MAX_ANG_Y  1.57075f
+#define MTH_ANG360(ang) ((int)(ang) % 360) + ((ang) - (int)(ang))
+#define MTH_ANGRAD(ang) (f_4b)((int)((ang)*10000000) % 62831853)/10000000.0f
 #define MTH_ADDRAD(ang) (ang) += ((ang) < 0 ? SPT_RADIANS : ((ang) >= SPT_RADIANS ? -SPT_RADIANS : 0.01f));
 
 typedef void* PMem;
@@ -60,10 +60,18 @@ namespace mth {
 		f_4b v;
 	};
 	struct SEssenceMeta {
-		i_2b txtr_id; //( Draw_Texture_ID  ) Íîìåð òåêñòóðû
-		i_2b anim_id; //( Draw_Animated_ID ) Íîìåð àíèìàöèè
-		i_2b mesh_id; //( Draw_Command_ID  ) Íîìåð ìîäåëè 
-		i_2b inst_id; //( Draw_Instance_ID ) Íîìåð èíñòàíñà
+		i_2b txtr_id;
+		i_2b anim_id;
+		i_2b mesh_id;
+		i_2b inst_id;
+	};
+	struct SLoadingShaders {
+		u_4b mesh_VertShader;
+		u_4b mesh_FragShader;
+		u_4b region_VertShader;
+		u_4b region_FragShader;
+		u_4b compute_Shader;
+		i_4b success_loading;
 	};
 	struct SInstnOffSet {
 		enum WAYMASK : u_4b {
@@ -96,12 +104,11 @@ namespace mth {
 		i_4b ID_Material;
 		i_4b ID_Instance;
 	};
-	//Ñòðóêòóðà êîìàíäû îòðèñîâêè DrawArraysIndirectCommand = 128_bit
 	struct SDrawCommand {
-		u_4b vert_count;	// Êîëè÷åñòâî âåðøèí äëÿ ïðèìèòèâà
-		u_4b inst_count;	// Êîëè÷åñòâî èíñòàíñîâ
-		u_4b vert_first;	// Íà÷àëüíûé èíäåêñ â âåðøèííîì ìàññèâå
-		u_4b inst_first;	// Áàçîâûé èíñòàíñ (äîáàâëÿåòñÿ ê gl_InstanceID)
+		u_4b vert_count;
+		u_4b inst_count;
+		u_4b vert_first;
+		u_4b inst_first;
 	};
 
 #ifdef MTH_ARR_QUEUE

@@ -27,14 +27,6 @@
 #define COUT_CMD(cout_cmd_procedure)
 #endif
 
-struct SLoadingShaders {
-	u_4b mesh_VertShader;
-	u_4b mesh_FragShader;
-	u_4b region_VertShader;
-	u_4b region_FragShader;
-	u_4b compute_Shader;
-	i_4b success_loading;
-};
 // загрузка региона
 __forceinline void Interpolation_UpdateLendspaces() {
 	//glNamedBufferSubData(emg_Region.index_mesh_VBO_, slot * REGION_VERTEX_SIZE, bytes, data);
@@ -132,13 +124,13 @@ __forceinline f_4b* bild_region(i_8b* array_size, i_4b quad_w, f_4b stride_c) {
 	return Array;
 }
 //Загрузка шейдерных программ
-__forceinline void load_saheder_progs(SLoadingShaders* SLoadingShaders) {
-	u_4b& shdr_Cmp = SLoadingShaders->compute_Shader;
-	u_4b& shdr_m_Vrt = SLoadingShaders->mesh_VertShader;
-	u_4b& shdr_m_Frg = SLoadingShaders->mesh_FragShader;
-	u_4b& shdr_r_Vrt = SLoadingShaders->region_VertShader;
-	u_4b& shdr_r_Frg = SLoadingShaders->region_FragShader;
-	i_4b& success = SLoadingShaders->success_loading;
+__forceinline void load_saheder_progs(mth::SLoadingShaders* Shaders) {
+	i_4b& success    = Shaders->success_loading;
+	u_4b& shdr_Cmp   = Shaders->compute_Shader;
+	u_4b& shdr_m_Vrt = Shaders->mesh_VertShader;
+	u_4b& shdr_m_Frg = Shaders->mesh_FragShader;
+	u_4b& shdr_r_Vrt = Shaders->region_VertShader;
+	u_4b& shdr_r_Frg = Shaders->region_FragShader;
 	u_8b lengt_accum = 0;
 	t_wrd sahderName{ nullptr };
 	t_wrd fileText{ nullptr };
@@ -408,7 +400,7 @@ __forceinline void init_view_matrix() {
 		glGenBuffers(1, &emg_GPU.index_camera_UBO_);															// Создание буфера
 		glBindBuffer(GL_UNIFORM_BUFFER, emg_GPU.index_camera_UBO_);											// Захват буфера
 		glBufferData(GL_UNIFORM_BUFFER, emg_DrawData.Camera.view_size_, nullptr, GL_DYNAMIC_DRAW);				// Настройка буфера
-		glBindBufferBase(GL_UNIFORM_BUFFER, emg_GPU.Layout::VwProj, emg_GPU.index_camera_UBO_);			// Помечаем как ViewProj
+		glBindBufferBase(GL_UNIFORM_BUFFER, emg::Layout::VwProj, emg_GPU.index_camera_UBO_);			// Помечаем как ViewProj
 		glBufferSubData(GL_UNIFORM_BUFFER, NULL, emg_DrawData.Camera.view_size_, emg_DrawData.Camera.view_refc_);	// Загрузка буфера
 		glBindBuffer(GL_UNIFORM_BUFFER, NULL);																	// Отпускаем буффер
 	}
@@ -416,7 +408,7 @@ __forceinline void init_view_matrix() {
 
 // Init() < - Загрузка шейдера расчета и отрисовки в GPU
 __forceinline void load_prog_to_GPU() {
-	SLoadingShaders Prog{ 0 };
+	mth::SLoadingShaders Prog{ 0 };
 	load_saheder_progs(&Prog);
 	if (!Prog.mesh_FragShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [MODELS FRAGMENT SHADER]\n");
 	if (!Prog.mesh_VertShader) Logger.SetError("ERROR::SHADER::PROGRAM::LOST [MODELS VERTEX SHADER]\n");
@@ -500,12 +492,12 @@ __forceinline void load_mesh_to_GPU() {
 		glGenBuffers(1, &emg_GPU.index_mesh_VBO_);
 		glBindBuffer(GL_ARRAY_BUFFER, emg_GPU.index_mesh_VBO_);
 		glBufferStorage(GL_ARRAY_BUFFER, float_count * sizeof(f_4b), All_ModelsVertexes, NULL);
-		glVertexAttribPointer(emg_GPU.Layout::MshPos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
-		glEnableVertexAttribArray(emg_GPU.Layout::MshPos); // Координаты
-		glVertexAttribPointer(emg_GPU.Layout::MshNrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
-		glEnableVertexAttribArray(emg_GPU.Layout::MshNrm); // Нормали
-		glVertexAttribPointer(emg_GPU.Layout::MshTex, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
-		glEnableVertexAttribArray(emg_GPU.Layout::MshTex); // Текстура
+		glVertexAttribPointer(emg::Layout::MshPos, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)0);
+		glEnableVertexAttribArray(emg::Layout::MshPos); // Координаты
+		glVertexAttribPointer(emg::Layout::MshNrm, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(3 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg::Layout::MshNrm); // Нормали
+		glVertexAttribPointer(emg::Layout::MshTex, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(f_4b), (PMem)(6 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg::Layout::MshTex); // Текстура
 		glBindBuffer(GL_ARRAY_BUFFER, NULL);
 		glBindVertexArray(NULL);
 		free(All_ModelsVertexes);
@@ -520,7 +512,7 @@ __forceinline void load_mesh_to_GPU() {
 		glGenBuffers(1, &emg_GPU.index_mesh_matrix_);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, emg_GPU.index_mesh_matrix_);
 		glBufferStorage(GL_SHADER_STORAGE_BUFFER, bufferByteSize, NULL, NULL);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg_GPU.Layout::Matrix, emg_GPU.index_mesh_matrix_);// Помечаем как матрицы
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, emg::Layout::Matrix, emg_GPU.index_mesh_matrix_);// Помечаем как матрицы
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, NULL);
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
@@ -531,7 +523,7 @@ __forceinline void load_mesh_to_GPU() {
 	{//+++++++++++++++++[ Attrib Buffer ]++++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(ONLINE_LIMIT) * sizeof(mth::SInstnAttrib);
 		u_4b type = GL_SHADER_STORAGE_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-		emg_GPU.MeshAttribs_refc_ = bild_refc_storage(&emg_GPU.index_mesh_attribs_, bufferByteSize, emg_GPU.Layout::Attrib, type, flag);
+		emg_GPU.MeshAttribs_refc_ = bild_refc_storage(&emg_GPU.index_mesh_attribs_, bufferByteSize, emg::Layout::Attrib, type, flag);
 		if (!emg_GPU.MeshAttribs_refc_) Logger.SetError("ERROR::[ render.h ]: MODELS_MAPING_FAIL &<-MeshAttribs_refc_\n");
 		u_8b error_code = glGetError();
 		if (error_code != GL_NO_ERROR) {
@@ -627,10 +619,10 @@ __forceinline void init_wrld_in_GPU() {
 		glGenBuffers(1, &emg_GPU.index_region_VBO_);
 		glBindBuffer(GL_ARRAY_BUFFER, emg_GPU.index_region_VBO_);
 		glBufferStorage(GL_ARRAY_BUFFER, bufferByteSize, all_VertexArray, NULL);
-		glVertexAttribPointer(emg_GPU.Layout::RegPos, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f_4b), (PMem)0);
-		glEnableVertexAttribArray(emg_GPU.Layout::RegPos); // Координаты
-		glVertexAttribPointer(emg_GPU.Layout::RegTex, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f_4b), (PMem)(2 * sizeof(f_4b)));
-		glEnableVertexAttribArray(emg_GPU.Layout::RegTex); // Текстура
+		glVertexAttribPointer(emg::Layout::RegPos, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f_4b), (PMem)0);
+		glEnableVertexAttribArray(emg::Layout::RegPos); // Координаты
+		glVertexAttribPointer(emg::Layout::RegTex, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(f_4b), (PMem)(2 * sizeof(f_4b)));
+		glEnableVertexAttribArray(emg::Layout::RegTex); // Текстура
 		glBindBuffer(GL_ARRAY_BUFFER, NULL);
 		glBindVertexArray(NULL);
 		delete[] all_VertexArray;
@@ -655,7 +647,7 @@ __forceinline void init_wrld_in_GPU() {
 	{//+++++++++++++++++[ Offsets Buffer ]+++++++++++++++++
 		bufferByteSize = static_cast<i_8b>(REGION_DRAWS_COUNT) * 8;
 		u_4b type = GL_SHADER_STORAGE_BUFFER, flag = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-		emg_GPU.RegionOffsets_refc_ = bild_refc_storage(&emg_GPU.index_region_offsets_, bufferByteSize, emg_GPU.Layout::Offset, type, flag);
+		emg_GPU.RegionOffsets_refc_ = bild_refc_storage(&emg_GPU.index_region_offsets_, bufferByteSize, emg::Layout::Offset, type, flag);
 		if (!emg_GPU.RegionOffsets_refc_)  Logger.SetError("ERROR::[render.h]: LENDSPACE_UNMAPPED [emg_GPU.RegionOffsets_refc_]\n");
 		else memcpy(emg_GPU.RegionOffsets_refc_, emg_DrawData.RegionOffsets_, bufferByteSize);
 		u_8b error_code = glGetError();
@@ -905,9 +897,11 @@ __forceinline void emg::render::CreateFrame() {
 #undef TEXTURES_LOAD_MODE
 //===========================================================================================
 #define UnitVisualData emg::Data.Logic.unit_visual_data_
+#define UnitPositionData emg::Data.Logic.unit_global_step_
 //Добавить сущность в рендер : emg::Data.Render.essence_add_to_show_id_
 __forceinline void emg::render::InsertInDrawPipline(u_2b entityID) {
 	mth::SEssenceMeta& ToShow_EntyData = UnitVisualData[entityID];
+	mth::U2_2pos ToShow_EntyPoint = UnitPositionData[entityID];
 	std::atomic<Bool>& IsFree = emg::Data.Render.draw_command_is_free_;
 	std::atomic<Bool>& Update = emg::Data.Render.draw_command_update_;
 	i_4b& InstCount = emg::Data.Render.count_instaces_;
@@ -941,7 +935,8 @@ __forceinline void emg::render::InsertInDrawPipline(u_2b entityID) {
 	if (bytes_to_move > 0) {
 		std::memmove(&DRW_Attribs[inst + 1], &DRW_Attribs[inst], bytes_to_move); 
 	}
-	DRW_Attribs[inst] = { 0 };
+	DRW_Attribs[inst].x = static_cast<f_4b>(ToShow_EntyPoint.x);
+	DRW_Attribs[inst].y = static_cast<f_4b>(ToShow_EntyPoint.y);
 	DRW_Attribs[inst].ID_Instance = ToShow_EntyData.inst_id;
 	DRW_Attribs[inst].ID_Material = ToShow_EntyData.txtr_id;
 	InstCount += 1;
@@ -950,6 +945,7 @@ __forceinline void emg::render::InsertInDrawPipline(u_2b entityID) {
 	Update.store(true, std::memory_order_release);
 	IsFree.store(true, std::memory_order_release);
 }
+#undef UnitPositionData emg::Data.Logic.unit_global_step_
 //Удалить сущность из рендера : emg::Data.Render.essence_add_to_hide_id_
 __forceinline void emg::render::RemoveInDrawPipline(u_2b entityID) {
 	mth::SEssenceMeta& ToHide_EntyData = UnitVisualData[entityID];
